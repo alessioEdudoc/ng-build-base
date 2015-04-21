@@ -5,8 +5,14 @@ angular.module('myApp', [
   'ngRoute',
   'myApp.view1',
   'myApp.view2',
-  'myApp.version'
+  'myApp.version',
+  'ui.bootstrap'
 ]).
 config(['$routeProvider', function($routeProvider) {
-  $routeProvider.otherwise({redirectTo: '/view1'});
+  $routeProvider
+      .when('/test', {
+        controller: 'TestCtrl',
+        templateUrl: 'feat/layoutTools/tmpl/test.html'
+      })
+      .otherwise({redirectTo: '/view1'});
 }]);
