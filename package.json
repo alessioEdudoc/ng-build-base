@@ -22,7 +22,8 @@
     "gulp-minify-css": "~1.1.0",
     "gulp-less": "~3.0.3",
     "gulp-concat": "~2.5.2",
-    "gulp-rename2": "~0.1.5"
+    "gulp-rename2": "~0.1.5",
+    "gulp-param": "~0.6.3"
   },
   "scripts": {
     "postinstall": "bower install",
