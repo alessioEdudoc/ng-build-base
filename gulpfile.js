@@ -28,24 +28,42 @@ gulp.task('clean', function(){
 
 gulp.task('inject', ['vendor', 'js','templates','less'], function () {
 
-    if (mode==='prod') {
 
-        var target = gulp.src('./app/index.html');
-        // It's not necessary to read the files (will speed up things), we're only after their paths:
-        var sources = gulp.src(['./build/js/*.js', './build/css/*.css'], {read: false});
+    var target = gulp.src('./app/index.html');
+    // It's not necessary to read the files (will speed up things), we're only after their paths:
+    var jsSources = (mode==='prod') ?
+            gulp.src(['./build/js/*.js'], {read: false}) :
+            gulp.src(['./build/app.js', './build/feat/**/*.js'], {read: false})
+        ;
+    var cssSources = gulp.src('./build/css/*.css');
 
-        return target.pipe(inject(sources))
-            .pipe(minHtml())
-            .pipe(gulp.dest('./build'));
-    }
-    else {
-        var target = gulp.src('./app/index.html');
-        // It's not necessary to read the files (will speed up things), we're only after their paths:
-        var sources = gulp.src(['./build/app.js', './build/feat/**/*.js', './build/css/*.css'], {read: false});
+    return target
+        .pipe(inject(jsSources, {
+            read        : false,
+            starttag    : '<!-- inject:js -->',
+            addRootSlash: false,
+            transform: function (filepath) {
+                //converts build/src/app/**/*.js   --->   src/app/**/*.js'
+                var filename = filepath.split('/').splice(1).join('/');
 
-        return target.pipe(inject(sources))
-            .pipe(gulp.dest('./build'));
-    }
+                return '<script src="'+ filename +'?v=' + antiCache + '"></script>';
+            }
+        }))
+        .pipe(inject(cssSources, {
+            read        : false,
+            starttag    : '<!-- inject:css -->',
+            addRootSlash: false,
+            transform: function (filepath) {
+
+                //converts build/src/app/**/*.js   --->   src/app/**/*.js'
+                var filename = filepath.split('/').splice(1).join('/');
+
+                return '<link rel="stylesheet" href="'+ filename +'?v=' + antiCache + '">';
+            }
+        }))
+        .pipe(minHtml())
+        .pipe(gulp.dest('./build'));
+
 });
 
 gulp.task('less', ['clean'], function () {
