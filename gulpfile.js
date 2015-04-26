@@ -7,12 +7,17 @@ var minHtml = require('gulp-minify-html');
 var minCss = require('gulp-minify-css');
 var less = require('gulp-less');
 var concat = require('gulp-concat');
-var rename = require('gulp-rename2');
 var del = require('del');
-var path = require('path');
+var iff = require('gulp-if-else');
+
 
 var mode = 'dev';
 var templateMode = 'js';
+
+
+var antiCache = Date.now();
+
+
 
 
 gulp.task('clean', function(){
@@ -20,26 +25,34 @@ gulp.task('clean', function(){
 });
 
 
-gulp.task('moveFiles', ['clean'], function(){
-    return gulp.src(['./app/**/*'])
-        .pipe(gulp.dest('./build'));
+
+gulp.task('inject', ['vendor', 'js','templates','less'], function () {
+
+    if (mode==='prod') {
+
+        var target = gulp.src('./app/index.html');
+        // It's not necessary to read the files (will speed up things), we're only after their paths:
+        var sources = gulp.src(['./build/js/*.js', './build/css/*.css'], {read: false});
+
+        return target.pipe(inject(sources))
+            .pipe(minHtml())
+            .pipe(gulp.dest('./build'));
+    }
+    else {
+        var target = gulp.src('./app/index.html');
+        // It's not necessary to read the files (will speed up things), we're only after their paths:
+        var sources = gulp.src(['./build/app.js', './build/feat/**/*.js', './build/css/*.css'], {read: false});
+
+        return target.pipe(inject(sources))
+            .pipe(gulp.dest('./build'));
+    }
 });
 
-
-gulp.task('inject', ['moveFiles','less'], function () {
-    var target = gulp.src('./app/index.html');
-    // It's not necessary to read the files (will speed up things), we're only after their paths:
-    var sources = gulp.src(['./build/app.js', './build/feat/**/*.js', './build/css/*.css'], {read: false});
-
-    return target.pipe(inject(sources))
-        .pipe(gulp.dest('./build'));
-});
-
-gulp.task('less', function () {
+gulp.task('less', ['clean'], function () {
     return gulp.src('./app/less/styles.less')
         .pipe(less())
-        .pipe(concat('styles.css'))
-        .pipe(minCss())
+        .pipe(iff(mode==='prod', function(){return concat('styles.css')}))
+        .pipe(iff(mode==='prod',minCss))
         .pipe(gulp.dest('./build/css'));
 });
 
@@ -53,62 +66,51 @@ gulp.task('vendor', ['clean'], function () {
 
 
 gulp.task('js', ['clean'], function () {
-    return gulp.src(['./app/app.js', './app/feat/**/*.js'])
-        .pipe(concat('app.min.js'))
-        .pipe(ngAnnotate())
-        .pipe(uglify())
-        .pipe(gulp.dest('./build/js'));
+
+    if (mode === 'prod') {
+        return gulp.src(['./app/app.js', './app/feat/**/*.js'])
+            .pipe(concat('app.min.js'))
+            .pipe(ngAnnotate())
+            .pipe(uglify())
+            .pipe(gulp.dest('./build/js'));
+    }
+    else if (mode === 'dev') {
+        return gulp.src(['./app/app.js', './app/**/*.js'])
+            .pipe(gulp.dest('./build'));
+    }
 });
 
 
-gulp.task('pInject', ['vendor', 'js', 'pTemplates', 'less'], function () {
-    var target = gulp.src('./app/index.html');
-    // It's not necessary to read the files (will speed up things), we're only after their paths:
-    var sources = gulp.src(['./build/js/*.js', './build/css/*.css'], {read: false});
-
-    return target.pipe(inject(sources))
-        .pipe(gulp.dest('./build'));
-});
 
 
-gulp.task('pTemplates', function() {
+gulp.task('templates', ['clean'], function() {
 
     if (templateMode === 'js') {
-        gulp.src('./app/feat/**/*.html')
-            .pipe(minHtml())
+        return gulp.src('./app/feat/**/*.html')
+            .pipe(iff(mode==='prod',minHtml))
             .pipe(html2js({
                 base: 'app/',
                 outputModuleName: 'myApp',
                 useStrict: true
             }))
             .pipe(concat('template.js'))
-            .pipe(ngAnnotate())
-            .pipe(uglify())
-            .pipe(gulp.dest('./build/js'));
+            .pipe(iff(mode==='prod',ngAnnotate))
+            .pipe(iff(mode==='prod', uglify))
+            .pipe(iff(mode==='prod',
+                function(){return gulp.dest('./build/js')},
+                function(){return gulp.dest('./build/feat')}
+            ));
     } else {
-
-        gulp.src('./app/feat/**/*.html')
-            .pipe(minHtml())
+        return gulp.src('./app/feat/**/*.html')
+            .pipe(iff(mode==='prod', minHtml))
             .pipe(gulp.dest('./build/feat'));
-
     }
 });
 
-gulp.task('pMinifyIndex', ['pInject'], function () {
-    return gulp.src('./build/index.html')
-        .pipe(minHtml())
-        .pipe(gulp.dest('./build'));
-});
+
 
 // build tasks
 
-gulp.task('prod', ['vendor', 'js', 'pInject', 'pTemplates', 'pMinifyIndex']);
-
-
-gulp.task('dev', function () {
-    mode = 'dev';
-    return gulp.run('inject');
-});
 
 gulp.task('default', function (mod, templ, help) {
 
@@ -131,6 +133,6 @@ gulp.task('default', function (mod, templ, help) {
     mode = mod || 'dev';
 
 
-    return gulp.run(mode);
+    return gulp.run('inject');
 });
 
