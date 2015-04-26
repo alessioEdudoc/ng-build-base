@@ -26,69 +26,19 @@ gulp.task('moveFiles', ['clean'], function(){
 });
 
 
-gulp.task('inject', ['moveFiles', 'less'], function () {
+gulp.task('inject', ['moveFiles','less'], function () {
     var target = gulp.src('./app/index.html');
     // It's not necessary to read the files (will speed up things), we're only after their paths:
-    var sources = gulp.src(['./build/app.js', './build/feat/**/*.js', './build/feat/**/*.css'], {read: false});
+    var sources = gulp.src(['./build/app.js', './build/feat/**/*.js', './build/css/*.css'], {read: false});
 
     return target.pipe(inject(sources))
         .pipe(gulp.dest('./build'));
 });
 
 gulp.task('less', function () {
-    return gulp.src([
-        './app/bower_components/bootstrap/less/variables.less',
-        './app/bower_components/bootstrap/less/mixins.less',
-
-       './app/bower_components/bootstrap/less/normalize.less',
-        './app/bower_components/bootstrap/less/print.less',
-        //'./app/bower_components/bootstrap/less/glyphicons.less',
-
-     //   './app/bower_components/bootstrap/less/scaffolding.less',
-     //   './app/bower_components/bootstrap/less/type.less',
-        './app/bower_components/bootstrap/less/code.less',
-        './app/bower_components/bootstrap/less/grid.less',
-        './app/bower_components/bootstrap/less/tables.less',
-        './app/bower_components/bootstrap/less/forms.less',
-        './app/bower_components/bootstrap/less/buttons.less',
-
-        // Components
-        /*       "./app/bower_components/bootstrap/less/component-animations.less",
-        "./app/bower_components/bootstrap/less/dropdowns.less",
-        "./app/bower_components/bootstrap/less/button-groups.less",
-        "./app/bower_components/bootstrap/less/input-groups.less",
-        "./app/bower_components/bootstrap/less/navs.less",
-        "./app/bower_components/bootstrap/less/navbar.less",
-        "./app/bower_components/bootstrap/less/breadcrumbs.less",
-        "./app/bower_components/bootstrap/less/pagination.less",
-        "./app/bower_components/bootstrap/less/pager.less",
-        "./app/bower_components/bootstrap/less/labels.less",
-        "./app/bower_components/bootstrap/less/badges.less",
-        "./app/bower_components/bootstrap/less/jumbotron.less",
-        "./app/bower_components/bootstrap/less/thumbnails.less",
-        "./app/bower_components/bootstrap/less/alerts.less",
-        "./app/bower_components/bootstrap/less/progress-bars.less",
-        "./app/bower_components/bootstrap/less/media.less",
-        "./app/bower_components/bootstrap/less/list-group.less",
-        "./app/bower_components/bootstrap/less/panels.less",
-        "./app/bower_components/bootstrap/less/responsive-embed.less",
-        "./app/bower_components/bootstrap/less/wells.less",
-        "./app/bower_components/bootstrap/less/close.less",
-
-        // Components w/ JavaScript
-        "./app/bower_components/bootstrap/less/modals.less",
-        "./app/bower_components/bootstrap/less/tooltip.less",
-        "./app/bower_components/bootstrap/less/popovers.less",
-        "./app/bower_components/bootstrap/less/carousel.less",
-
-        // Utility classes
-        "./app/bower_components/bootstrap/less/utilities.less",
-        "./app/bower_components/bootstrap/less/responsive-utilities.less"
-  */      ])
-        .pipe(less({
-            paths: [ path.join(__dirname, 'less', 'includes') ]
-        }))
-        .pipe(concat('bootstrap.css'))
+    return gulp.src('./app/less/styles.less')
+        .pipe(less())
+        .pipe(concat('styles.css'))
         .pipe(minCss())
         .pipe(gulp.dest('./build/css'));
 });
@@ -125,14 +75,6 @@ gulp.task('pTemplates', function() {
 
     if (templateMode === 'js') {
         gulp.src('./app/feat/**/*.html')
-            /*  .pipe(rename(function (pathObj, filePath) {
-             return pathObj.join(
-             // remove leading 'app/' directory from the file path
-             pathObj.dirname(filePath).replace('app/feat/',''),
-             // replace '.coffee' file extension with '.js'
-             pathObj.dirname(filePath).replace('tmpl/','')
-             );
-             }))  */
             .pipe(minHtml())
             .pipe(html2js({
                 base: 'app/',
