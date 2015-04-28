@@ -11,13 +11,19 @@ var gulp = require('gulp-param')(require('gulp'), process.argv),
     del = require('del'),
     iff = require('gulp-if-else'),
     watch = require('gulp-watch'),
+    bust = require('gulp-buster'),
+
 
     mode = 'dev',
     templateMode = 'js'
     ;
 
-var hashes = {
 
+
+var bustOpts = {
+    fileName : 'busters.json',
+    length : 7,
+    algo : 'md5'
 };
 
 
@@ -32,7 +38,9 @@ var task = {
             .pipe(less())
             .pipe(iff(mode==='prod', function(){return concat('styles.css')}))
             .pipe(iff(mode==='prod',minCss))
-            .pipe(gulp.dest('./build/css'));
+            .pipe(gulp.dest('./build/css'))
+            .pipe(bust(bustOpts)).pipe(gulp.dest('.'))
+            ;
     },
 
     vendor : function () {
@@ -47,11 +55,15 @@ var task = {
                 .pipe(concat('app.min.js'))
                 .pipe(ngAnnotate())
                 .pipe(uglify())
-                .pipe(gulp.dest('./build/js'));
+                .pipe(gulp.dest('./build/js'))
+                .pipe(bust(bustOpts)).pipe(gulp.dest('.'))
+                ;
         }
         else if (mode === 'dev') {
             return gulp.src(['./app/app.js', './app/fea*/**/*.js'])
-                .pipe(gulp.dest('./build/js'));
+                .pipe(gulp.dest('./build/js'))
+                .pipe(bust(bustOpts)).pipe(gulp.dest('.'))
+                ;
         }
     },
 
@@ -69,11 +81,14 @@ var task = {
                 .pipe(iff(mode==='prod',ngAnnotate))
                 .pipe(iff(mode==='prod', uglify))
                 .pipe(gulp.dest('./build/js'))
+                .pipe(bust(bustOpts)).pipe(gulp.dest('.'))
                 ;
         } else {
             return gulp.src('./app/feat/**/*.html')
                 .pipe(iff(mode==='prod', minHtml))
-                .pipe(gulp.dest('./build/feat'));
+                .pipe(gulp.dest('./build/feat'))
+                .pipe(bust(bustOpts)).pipe(gulp.dest('.'))
+                ;
         }
     },
 
@@ -87,17 +102,18 @@ var task = {
                 gulp.src(['./build/js/*.js', './build/js/**/*.js', './build/css/*.css'], {read: false})
             ;
 
-
+        var hashes = require('./busters.json');
 
         return target
             .pipe(inject(sources, {
                 read : false,
                 transform : function (filepath) {
-                   // var normalizedPath = path.normalize(filepath);
+
                     var buildDir = 'build/';
                     var relativePath = filepath.substring(filepath.indexOf(buildDir)+buildDir.length);
+                    var normalizedPath = buildDir+relativePath;
                     var extension = path.extname(filepath);
-                    var hash = 'HASH';//hashes[normalizedPath];
+                    var hash = hashes[normalizedPath];
                     if (extension === '.js')
                         return '<script src="'+relativePath+'?v='+hash+'"></script>';
                     if (extension === '.css')

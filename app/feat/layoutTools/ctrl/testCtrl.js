@@ -1,4 +1,4 @@
 angular.module('myApp').controller('TestCtrl',function($scope){
 
-    $scope.name = 'Alessio!!!';
+    $scope.name = 'Alex!!!';
 });
