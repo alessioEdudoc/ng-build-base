@@ -1,5 +1,6 @@
 var gulp = require('gulp-param')(require('gulp'), process.argv),
     path = require('path'),
+    fs = require('fs'),
     inject = require('gulp-inject'),
     uglify = require('gulp-uglify'),
     ngAnnotate = require('gulp-ng-annotate'),
@@ -14,17 +15,60 @@ var gulp = require('gulp-param')(require('gulp'), process.argv),
     bust = require('gulp-buster'),
 
 
-    mode = 'dev',
-    templateMode = 'js'
+    mode,
+    templateMode
     ;
 
 
+var conf = {
 
-var bustOpts = {
-    fileName : 'busters.json',
-    length : 7,
-    algo : 'md5'
+    CONST : {
+        MODE : {
+            PROD : 'prod',
+            DEV : 'dev'
+        },
+        TEMPLATE_MODE : {
+            JS: 'js',
+            AJAX: 'ajax'
+        },
+        BUST_MODE : {
+            HASH : 'hash',
+            TIMESTAMP : 'timestamp'
+        }
+    },
+
+
+    minify : {
+        templates : true,
+        scripts : true,
+        styles : true
+    },
+
+
+    bustCache : {
+
+        type : 'timestamp',
+        paramKey : 'v',
+
+        opts : {
+            fileName : 'busters.json',
+            length : 12,
+            algo : 'md5'
+        },
+
+        templates : true,
+        scripts : true,
+        styles : true
+
+
+    },
+
+    watch : {
+        interval : 100,
+        debounceDelay : 200
+    }
 };
+
 
 
 var task = {
@@ -34,13 +78,14 @@ var task = {
     },
 
     less : function () {
-        return gulp.src('./app/less/styles.less')
+        var stream = gulp.src('./app/less/styles.less')
             .pipe(less())
             .pipe(iff(mode==='prod', function(){return concat('styles.css')}))
-            .pipe(iff(mode==='prod',minCss))
-            .pipe(gulp.dest('./build/css'))
-            .pipe(bust(bustOpts)).pipe(gulp.dest('.'))
-            ;
+            .pipe(iff(conf.minify.styles, minCss))
+            .pipe(gulp.dest('./build/css'));
+        if (conf.bustCache.styles)
+            return stream.pipe(bust(conf.bustCache.opts)).pipe(gulp.dest('.'));
+        return stream;
     },
 
     vendor : function () {
@@ -50,49 +95,56 @@ var task = {
 
     js : function () {
 
+        var stream;
         if (mode === 'prod') {
-            return gulp.src(['./app/app.js', './app/feat/**/*.js'])
-                .pipe(concat('app.min.js'))
-                .pipe(ngAnnotate())
-                .pipe(uglify())
-                .pipe(gulp.dest('./build/js'))
-                .pipe(bust(bustOpts)).pipe(gulp.dest('.'))
-                ;
+            stream = gulp.src(['./app/app.js', './app/feat/**/*.js'])
+                .pipe(concat('app.min.js'));
+
+            if (conf.minify.scripts)
+                stream.pipe(ngAnnotate()).pipe(uglify());
+
+            stream.pipe(gulp.dest('./build/js'));
+
         }
         else if (mode === 'dev') {
-            return gulp.src(['./app/app.js', './app/fea*/**/*.js'])
-                .pipe(gulp.dest('./build/js'))
-                .pipe(bust(bustOpts)).pipe(gulp.dest('.'))
-                ;
+            stream = gulp.src(['./app/app.js', './app/fea*/**/*.js'])
+                .pipe(gulp.dest('./build/js'));
         }
+
+        if (conf.bustCache.scripts)
+            return stream.pipe(bust(conf.bustCache.opts)).pipe(gulp.dest('.'));
+        return stream;
     },
 
     templates : function() {
 
+        var stream;
         if (templateMode === 'js') {
-            return gulp.src('./app/feat/**/*.html')
-                .pipe(iff(mode==='prod',minHtml))
+            stream = gulp.src('./app/feat/**/*.html')
+                .pipe(iff(conf.minify.templates, minHtml))
                 .pipe(html2js({
                     base: 'app/',
                     outputModuleName: 'myApp',
                     useStrict: true
                 }))
                 .pipe(concat('template.js'))
-                .pipe(iff(mode==='prod',ngAnnotate))
-                .pipe(iff(mode==='prod', uglify))
+                .pipe(iff(conf.minify.scripts, ngAnnotate))
+                .pipe(iff(conf.minify.scripts, uglify))
                 .pipe(gulp.dest('./build/js'))
-                .pipe(bust(bustOpts)).pipe(gulp.dest('.'))
                 ;
         } else {
-            return gulp.src('./app/feat/**/*.html')
-                .pipe(iff(mode==='prod', minHtml))
+            stream = gulp.src('./app/feat/**/*.html')
+                .pipe(iff(conf.minify.templates, minHtml))
                 .pipe(gulp.dest('./build/feat'))
-                .pipe(bust(bustOpts)).pipe(gulp.dest('.'))
                 ;
         }
+        if (conf.bustCache.templates)
+            return stream.pipe(bust(conf.bustCache.opts)).pipe(gulp.dest('.'));
+        return stream;
     },
 
     inject : function () {
+
 
 
         var target = gulp.src('./app/index.html');
@@ -102,7 +154,14 @@ var task = {
                 gulp.src(['./build/js/*.js', './build/js/**/*.js', './build/css/*.css'], {read: false})
             ;
 
-        var hashes = require('./busters.json');
+
+       // var hashes = require('./'+conf.bustCache.opts.fileName);
+        var str = fs.readFileSync('./'+conf.bustCache.opts.fileName, "utf8");
+        var hashes = JSON.parse(str);
+        //console.log(str);
+
+
+        var buildTime = Date.now().toString().substring(0, conf.bustCache.opts.length);
 
         return target
             .pipe(inject(sources, {
@@ -113,14 +172,18 @@ var task = {
                     var relativePath = filepath.substring(filepath.indexOf(buildDir)+buildDir.length);
                     var normalizedPath = buildDir+relativePath;
                     var extension = path.extname(filepath);
-                    var hash = hashes[normalizedPath];
+
+
+                    var hash = (conf.bustCache.type === conf.CONST.BUST_MODE.HASH ? hashes[normalizedPath] : buildTime);
+
+
                     if (extension === '.js')
-                        return '<script src="'+relativePath+'?v='+hash+'"></script>';
+                        return '<script src="'+relativePath+(hash ? '?'+conf.bustCache.paramKey+'='+hash : '')+'"></script>';
                     if (extension === '.css')
-                        return '<link rel="stylesheet" href="'+relativePath+'?v='+hash+'">';
+                        return '<link rel="stylesheet" href="'+relativePath+(hash ? '?'+conf.bustCache.paramKey+'='+hash : '')+'">';
                 }
             }))
-            .pipe(iff(mode==='prod', minHtml))
+            .pipe(iff(conf.minify.templates, minHtml))
             .pipe(gulp.dest('./build'));
 
     },
@@ -145,7 +208,8 @@ var task = {
         mode = mod || 'dev';
 
         return gulp.run('inject');
-    }
+    },
+
 };
 
 
@@ -167,34 +231,30 @@ gulp.task('default', task.default);
 
 
 // watched tasks
+var through = require('through2');
+
 
 gulp.task('watch', function (mod, templ, help) {
 
     task.default(mod, templ, help);
 
-
-    var options = {
-        interval : 100,
-        debounceDelay : 200
-    };
-
-
-    gulp.watch('./app/less/*.less', options, function(){
+    gulp.watch('./app/less/*.less', conf.watch, function(){
         console.log('watch less: ');
-        task.less();
-        task.inject();
+        task.less()
+            .on('end', task.inject);
+
     });
 
-    gulp.watch('./app/feat/**/*.html', options, function(){
+    gulp.watch('./app/feat/**/*.html', conf.watch, function(){
         console.log('watch html: ');
-        task.templates();
-        task.inject();
+        task.templates()
+            .on('end', task.inject);
     });
 
-    gulp.watch(['./app/app.js', './app/feat/**/*.js'], options, function(){
+    gulp.watch(['./app/app.js', './app/feat/**/*.js'], conf.watch, function(){
         console.log('watch js: ');
-        task.js();
-        task.inject();
+        task.js()
+            .on('end', task.inject);
     });
 
 });
