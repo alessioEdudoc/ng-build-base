@@ -12,64 +12,10 @@ var gulp = require('gulp-param')(require('gulp'), process.argv),
     del = require('del'),
     iff = require('gulp-if-else'),
     watch = require('gulp-watch'),
-    bust = require('gulp-buster'),
-
-
-    mode,
-    templateMode
+    bust = require('gulp-buster')
     ;
 
-
-var conf = {
-
-    CONST : {
-        MODE : {
-            PROD : 'prod',
-            DEV : 'dev'
-        },
-        TEMPLATE_MODE : {
-            JS: 'js',
-            AJAX: 'ajax'
-        },
-        BUST_MODE : {
-            HASH : 'hash',
-            TIMESTAMP : 'timestamp'
-        }
-    },
-
-
-    minify : {
-        templates : true,
-        scripts : true,
-        styles : true
-    },
-
-
-    bustCache : {
-
-        type : 'timestamp',
-        paramKey : 'v',
-
-        opts : {
-            fileName : 'busters.json',
-            length : 12,
-            algo : 'md5'
-        },
-
-        templates : true,
-        scripts : true,
-        styles : true
-
-
-    },
-
-    watch : {
-        interval : 100,
-        debounceDelay : 200
-    }
-};
-
-
+var conf;   // will contain the configuration object
 
 var task = {
 
@@ -79,10 +25,14 @@ var task = {
 
     less : function () {
         var stream = gulp.src('./app/less/styles.less')
-            .pipe(less())
-            .pipe(iff(mode==='prod', function(){return concat('styles.css')}))
-            .pipe(iff(conf.minify.styles, minCss))
-            .pipe(gulp.dest('./build/css'));
+            .pipe(less());
+
+        if (conf.styles.minify)
+            stream.pipe(concat('styles.css'))
+                .pipe(minCss(conf.styles.minify));
+
+        stream.pipe(gulp.dest('./build/css'));
+
         if (conf.bustCache.styles)
             return stream.pipe(bust(conf.bustCache.opts)).pipe(gulp.dest('.'));
         return stream;
@@ -96,19 +46,19 @@ var task = {
     js : function () {
 
         var stream;
-        if (mode === 'prod') {
+        if (conf.scripts.minify) {
             stream = gulp.src(['./app/app.js', './app/feat/**/*.js'])
                 .pipe(concat('app.min.js'));
 
-            if (conf.minify.scripts)
-                stream.pipe(ngAnnotate()).pipe(uglify());
+            if (conf.scripts.minify)
+                stream.pipe(ngAnnotate()).pipe(uglify(conf.scripts.minify));
 
             stream.pipe(gulp.dest('./build/js'));
 
         }
-        else if (mode === 'dev') {
-            stream = gulp.src(['./app/app.js', './app/fea*/**/*.js'])
-                .pipe(gulp.dest('./build/js'));
+        else {
+            stream = gulp.src(['./app/app.js', './app/feat/**/*.js'])
+                .pipe(gulp.dest('./build/feat'));
         }
 
         if (conf.bustCache.scripts)
@@ -119,22 +69,21 @@ var task = {
     templates : function() {
 
         var stream;
-        if (templateMode === 'js') {
-            stream = gulp.src('./app/feat/**/*.html')
-                .pipe(iff(conf.minify.templates, minHtml))
-                .pipe(html2js({
-                    base: 'app/',
-                    outputModuleName: 'myApp',
-                    useStrict: true
-                }))
-                .pipe(concat('template.js'))
-                .pipe(iff(conf.minify.scripts, ngAnnotate))
-                .pipe(iff(conf.minify.scripts, uglify))
+        if (conf.templates.html2js) {
+            stream = gulp.src('./app/feat/**/*.html');
+
+            if (conf.templates.minify)
+                stream.pipe(minHtml(conf.templates.minify));
+
+            stream.pipe(html2js(conf.templates.html2js))
+                .pipe(iff(conf.scripts.concat, function(){return concat('template.js')}))
+                .pipe(iff(conf.scripts.minify, ngAnnotate))
+                .pipe(iff(conf.scripts.minify, uglify))
                 .pipe(gulp.dest('./build/js'))
                 ;
         } else {
             stream = gulp.src('./app/feat/**/*.html')
-                .pipe(iff(conf.minify.templates, minHtml))
+                .pipe(iff(conf.templates.minify, function(){ return minHtml(conf.templates.minify)}))
                 .pipe(gulp.dest('./build/feat'))
                 ;
         }
@@ -149,16 +98,11 @@ var task = {
 
         var target = gulp.src('./app/index.html');
         // It's not necessary to read the files (will speed up things), we're only after their paths:
-        var sources = (mode==='prod') ?
-                gulp.src(['./build/js/*.js', './build/css/*.css'], {read: false}) :
-                gulp.src(['./build/js/*.js', './build/js/**/*.js', './build/css/*.css'], {read: false})
-            ;
+        var sources = gulp.src(['./build/js/*.js', './build/feat/**/*.js', './build/css/*.css'], {read: false});
 
 
-       // var hashes = require('./'+conf.bustCache.opts.fileName);
         var str = fs.readFileSync('./'+conf.bustCache.opts.fileName, "utf8");
         var hashes = JSON.parse(str);
-        //console.log(str);
 
 
         var buildTime = Date.now().toString().substring(0, conf.bustCache.opts.length);
@@ -174,7 +118,7 @@ var task = {
                     var extension = path.extname(filepath);
 
 
-                    var hash = (conf.bustCache.type === conf.CONST.BUST_MODE.HASH ? hashes[normalizedPath] : buildTime);
+                    var hash = (conf.bustCache.type === 'hash' ? hashes[normalizedPath] : buildTime);
 
 
                     if (extension === '.js')
@@ -183,35 +127,30 @@ var task = {
                         return '<link rel="stylesheet" href="'+relativePath+(hash ? '?'+conf.bustCache.paramKey+'='+hash : '')+'">';
                 }
             }))
-            .pipe(iff(conf.minify.templates, minHtml))
+            .pipe(iff(conf.templates.minify, minHtml))
             .pipe(gulp.dest('./build'));
 
     },
 
-    default : function (mod, templ, help) {
+    default : function (mod, templ, help, c) {
 
-        if (help || (mod && mod !== 'prod' && mod !== 'dev') || (templ && templ !== 'ajax' && templ !== 'js')) {
+        c = c || 'prod';
+        conf = require('./gulp/'+c+'.conf.js');
 
+        if (help) {
             console.log("Usage: gulp [options]" +
                 "\n  Options:" +
-                "\n    -m { dev | prod } (default: dev)" +
-                "\n       dev  : development build, no optimization" +
-                "\n       prod : production build, with optimizations like minification and obfuscation" +
-                "\n    -t { ajax | js } (default: ajax)" +
-                "\n       ajax : the templates are just copied in the build directory and requested as needed" +
-                "\n       js   : the templates are injected in the angular templateCache and served as one js file" +
+                "\n    -c <config> (default: -c prod)" +
+                "\n       launches gulp with the selected configuration file" +
+                "\n       (e.g. 'prod' uses the file 'gulp/prod.conf.js') " +
                 "");
             return;
         }
 
-        templateMode = templ || 'ajax';
-        mode = mod || 'dev';
-
         return gulp.run('inject');
-    },
+    }
 
 };
-
 
 
 // dependency definition
@@ -231,7 +170,6 @@ gulp.task('default', task.default);
 
 
 // watched tasks
-var through = require('through2');
 
 
 gulp.task('watch', function (mod, templ, help) {
