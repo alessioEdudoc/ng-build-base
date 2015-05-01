@@ -2,7 +2,10 @@
 
 This project is a build configuration for AngularJS projects.
 It's based on **angular-seed**, and adds a full set of tools to be ready to work
-with AngularJS and LESS. It is based on **Gulp**
+with AngularJS and LESS. It is based on **gulp**.
+
+The project contains a sample AngularJS application and is preconfigured to install the Angular
+framework and a bunch of development and testing tools.
 
 Features:
 
@@ -13,10 +16,7 @@ Features:
 - Templates module (html2js)
 - Watch mode
 
-The seed contains a sample AngularJS application and is preconfigured to install the Angular
-framework and a bunch of development and testing tools for instant web development gratification.
 
-The seed app doesn't do much, just shows how to wire two controllers and views together.
 
 
 ## Getting Started
