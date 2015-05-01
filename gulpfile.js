@@ -12,11 +12,14 @@ var gulp = require('gulp-param')(require('gulp'), process.argv),
     del = require('del'),
     iff = require('gulp-if-else'),
     watch = require('gulp-watch'),
-    bust = require('gulp-buster')
+    bust = require('gulp-buster'),
+    bumper = require('gulp-bump')
     ;
 
-var conf;   // will contain the configuration object
-
+var conf,       // will contain the configuration object
+    bumpValue,  // the version bump type (major, minor, patch, prerelease) or the version number (e.g. '0.0.1')
+    bumpKey     // can be 'version' (if passing the version to bump) or 'type' (if passing a bump type)
+    ;
 var task = {
 
     clean : function(){
@@ -94,8 +97,6 @@ var task = {
 
     inject : function () {
 
-
-
         var target = gulp.src('./app/index.html');
         // It's not necessary to read the files (will speed up things), we're only after their paths:
         var sources = gulp.src(['./build/js/*.js', './build/feat/**/*.js', './build/css/*.css'], {read: false});
@@ -132,7 +133,19 @@ var task = {
 
     },
 
-    default : function (mod, templ, help, c) {
+
+    bump : function () {
+        var opts = {
+            preid : 'build'
+        };
+        opts[bumpKey] = bumpValue;
+
+        return gulp.src(['./package.json', './bower.json'])
+            .pipe(bumper(opts))
+            .pipe(gulp.dest('./'));
+    },
+
+    default : function (help, c, bump) {
 
         c = c || 'prod';
         conf = require('./gulp/'+c+'.conf.js');
@@ -143,11 +156,21 @@ var task = {
                 "\n    -c <config> (default: -c prod)" +
                 "\n       launches gulp with the selected configuration file" +
                 "\n       (e.g. 'prod' uses the file 'gulp/prod.conf.js') " +
+                "\n    --bump   -b  { major | minor | patch | prerelease } (default: prerelease)" +
+                "\n       bumps the version in the bower.json and in the package.json" +
                 "");
             return;
         }
 
-        return gulp.run('inject');
+        bump = bump || 'prerelease';
+        if (!bump.match(/^(major|minor|patch|prerelease|\d\.\d\.\d)$/i))
+            console.log ("Option -b --bump must be one of 'major', 'minor', 'patch', " +
+                "    'prerelease' or a Semver version number (like 0.1.2) (default: prerelease)");
+
+        bumpKey = (bump.match(/^\d\.\d\.\d$/) ? 'version' : 'type')
+        bumpValue = bump;
+
+        return gulp.run('bump');
     }
 
 };
@@ -161,7 +184,7 @@ gulp.task('vendor', ['clean'], task.vendor);
 gulp.task('js', ['clean'], task.js);
 gulp.task('templates', ['clean'], task.templates);
 gulp.task('inject', ['vendor', 'js','templates','less'], task.inject);
-
+gulp.task('bump', ['inject'], task.bump);
 
 // build tasks
 
