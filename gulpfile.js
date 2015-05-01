@@ -13,13 +13,16 @@ var gulp = require('gulp-param')(require('gulp'), process.argv),
     iff = require('gulp-if-else'),
     watch = require('gulp-watch'),
     bust = require('gulp-buster'),
-    bumper = require('gulp-bump')
+    bumper = require('gulp-bump'),
+    filesize = require('gulp-filesize')
     ;
 
 var conf,       // will contain the configuration object
     bumpValue,  // the version bump type (major, minor, patch, prerelease) or the version number (e.g. '0.0.1')
     bumpKey     // can be 'version' (if passing the version to bump) or 'type' (if passing a bump type)
     ;
+
+
 var task = {
 
     clean : function(){
@@ -34,7 +37,8 @@ var task = {
             stream.pipe(concat('styles.css'))
                 .pipe(minCss(conf.styles.minify));
 
-        stream.pipe(gulp.dest('./build/css'));
+        stream.pipe(gulp.dest('./build/css'))
+            .pipe(filesize());
 
         if (conf.bustCache.styles)
             return stream.pipe(bust(conf.bustCache.opts)).pipe(gulp.dest('.'));
@@ -56,12 +60,14 @@ var task = {
             if (conf.scripts.minify)
                 stream.pipe(ngAnnotate()).pipe(uglify(conf.scripts.minify));
 
-            stream.pipe(gulp.dest('./build/js'));
+            stream.pipe(gulp.dest('./build/js'))
+                .pipe(filesize());
 
         }
         else {
             stream = gulp.src(['./app/app.js', './app/feat/**/*.js'])
-                .pipe(gulp.dest('./build/feat'));
+                .pipe(gulp.dest('./build/feat'))
+                .pipe(filesize());
         }
 
         if (conf.bustCache.scripts)
@@ -83,11 +89,13 @@ var task = {
                 .pipe(iff(conf.scripts.minify, ngAnnotate))
                 .pipe(iff(conf.scripts.minify, uglify))
                 .pipe(gulp.dest('./build/js'))
+                .pipe(filesize())
                 ;
         } else {
             stream = gulp.src('./app/feat/**/*.html')
                 .pipe(iff(conf.templates.minify, function(){ return minHtml(conf.templates.minify)}))
                 .pipe(gulp.dest('./build/feat'))
+                .pipe(filesize())
                 ;
         }
         if (conf.bustCache.templates)
@@ -129,7 +137,8 @@ var task = {
                 }
             }))
             .pipe(iff(conf.templates.minify, minHtml))
-            .pipe(gulp.dest('./build'));
+            .pipe(gulp.dest('./build'))
+            .pipe(filesize());
 
     },
 
