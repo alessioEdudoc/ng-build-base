@@ -1,6 +1,8 @@
 var gulp = require('gulp-param')(require('gulp'), process.argv),
     path = require('path'),
     fs = require('fs'),
+    _ = require('underscore'),
+    util = require('gulp-util'),
     inject = require('gulp-inject'),
     uglify = require('gulp-uglify'),
     ngAnnotate = require('gulp-ng-annotate'),
@@ -14,13 +16,45 @@ var gulp = require('gulp-param')(require('gulp'), process.argv),
     watch = require('gulp-watch'),
     bust = require('gulp-buster'),
     bumper = require('gulp-bump'),
-    filesize = require('gulp-filesize')
+    filesize = require('gulp-filesize'),
+    jedit = require('gulp-json-editor')
     ;
 
 var conf,       // will contain the configuration object
     bumpValue,  // the version bump type (major, minor, patch, prerelease) or the version number (e.g. '0.0.1')
     bumpKey     // can be 'version' (if passing the version to bump) or 'type' (if passing a bump type)
     ;
+
+
+var showHelp = function(){
+    util.log(util.colors.blue("Usage: gulp [options]" +
+        "\n  Options:" +
+        "\n" +
+        "\n    -c <config> (default: -c prod)" +
+        "\n       launches gulp with the selected configuration file" +
+        "\n       (e.g. 'prod' uses the file 'gulp/prod.conf.js') " +
+        "\n" +
+        "\n    --bump   -b  { major | minor | patch | prerelease } (default: prerelease)" +
+        "\n       bumps the version in the bower.json and in the package.json" +
+        "\n" +
+        "\n    --help   -h" +
+        "\n       shows this help" +
+        "\n" +
+        "\n  Tasks:" +
+        "\n    edit - edit common keys in package.json and bower.json" +
+        "\n      -k (--key) <key>" +
+        "\n         the key (name, description, version)" +
+        "\n      -v (--value) <value>" +
+        "\n         the new value" +
+        "\n" +
+        "\n    watch - start the watch mode" +
+        "\n      -c <config> (default: -c prod)" +
+        "\n         launches gulp with the selected configuration file" +
+        "\n         (e.g. 'prod' uses the file 'gulp/prod.conf.js') " +
+        ""));
+};
+
+
 
 
 var task = {
@@ -144,6 +178,10 @@ var task = {
 
 
     bump : function () {
+
+        if (!bumpKey || !bumpValue)
+            return util.noop();
+
         var opts = {
             preid : 'build'
         };
@@ -160,25 +198,21 @@ var task = {
         conf = require('./gulp/'+c+'.conf.js');
 
         if (help) {
-            console.log("Usage: gulp [options]" +
-                "\n  Options:" +
-                "\n    -c <config> (default: -c prod)" +
-                "\n       launches gulp with the selected configuration file" +
-                "\n       (e.g. 'prod' uses the file 'gulp/prod.conf.js') " +
-                "\n    --bump   -b  { major | minor | patch | prerelease } (default: prerelease)" +
-                "\n       bumps the version in the bower.json and in the package.json" +
-                "");
+            showHelp();
             return;
         }
 
-        bump = bump || 'prerelease';
-        if (!bump.match(/^(major|minor|patch|prerelease|\d\.\d\.\d)$/i))
-            console.log ("Option -b --bump must be one of 'major', 'minor', 'patch', " +
-                "    'prerelease' or a Semver version number (like 0.1.2) (default: prerelease)");
+        if (bump !== false) {
+            bump = bump || 'prerelease';
+            if (!bump.match(/^(major|minor|patch|prerelease|\d\.\d\.\d)$/i)) {
+                util.log(util.colors.red("Option -b --bump must be one of 'major', 'minor', 'patch', " +
+                    "    'prerelease' or a Semver version number (like 0.1.2) (default: prerelease)"));
+                return;
+            }
 
-        bumpKey = (bump.match(/^\d\.\d\.\d$/) ? 'version' : 'type')
-        bumpValue = bump;
-
+            bumpKey = (bump.match(/^\d\.\d\.\d$/) ? 'version' : 'type')
+            bumpValue = bump;
+        }
         return gulp.run('bump');
     }
 
@@ -187,6 +221,7 @@ var task = {
 
 // dependency definition
 
+// build tasks
 gulp.task('clean', task.clean);
 gulp.task('less', ['clean'], task.less);
 gulp.task('vendor', ['clean'], task.vendor);
@@ -195,18 +230,34 @@ gulp.task('templates', ['clean'], task.templates);
 gulp.task('inject', ['vendor', 'js','templates','less'], task.inject);
 gulp.task('bump', ['inject'], task.bump);
 
-// build tasks
-
-gulp.task('default', task.default);
+gulp.task('default', task.default); // main task
 
 
+// help tasks
+gulp.task('help', showHelp);
+gulp.task('?', showHelp);
+
+// edit common json metadata
+gulp.task('edit', function (key, value) {
+
+    var allowedKeys = ['name', 'version', 'description'];
+    if (!_.contains(allowedKeys, key)) {
+        util.log(util.colors.red("Possible -k (--key) values: '"+allowedKeys.join("','")+"'"));
+        return;
+    }
+    var obj = {};
+    obj[key] = value;
+    return gulp.src(['./package.json', './bower.json'])
+        .pipe(jedit(obj))
+        .pipe(gulp.dest('./'));
+
+});
 
 // watched tasks
 
+gulp.task('watch', function (c) {
 
-gulp.task('watch', function (mod, templ, help) {
-
-    task.default(mod, templ, help);
+    task.default(false, c, false);
 
     gulp.watch('./app/less/*.less', conf.watch, function(){
         console.log('watch less: ');
