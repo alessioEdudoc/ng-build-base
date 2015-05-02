@@ -86,20 +86,20 @@ var task = {
 
     js : function () {
 
+        // takes all js files BUT the unit test files
         var stream;
+        var sourceFiles = ['!./**/*.test.js', './app/app.js', './app/feat/**/*.js'];
+
         if (conf.scripts.minify) {
-            stream = gulp.src(['./app/app.js', './app/feat/**/*.js'])
-                .pipe(concat('app.min.js'));
-
-            if (conf.scripts.minify)
-                stream.pipe(ngAnnotate()).pipe(uglify(conf.scripts.minify));
-
-            stream.pipe(gulp.dest('./build/js'))
+            stream = gulp.src(sourceFiles)
+                .pipe(concat('app.min.js'))
+                .pipe(ngAnnotate())
+                .pipe(uglify(conf.scripts.minify))
+                .pipe(gulp.dest('./build/js'))
                 .pipe(filesize());
-
         }
         else {
-            stream = gulp.src(['./app/app.js', './app/feat/**/*.js'])
+            stream = gulp.src(sourceFiles)
                 .pipe(gulp.dest('./build/feat'))
                 .pipe(filesize());
         }
@@ -112,13 +112,14 @@ var task = {
     templates : function() {
 
         var stream;
+        var templateFiles = './app/feat/**/*.html';
+
         if (conf.templates.html2js) {
-            stream = gulp.src('./app/feat/**/*.html');
-
-            if (conf.templates.minify)
-                stream.pipe(minHtml(conf.templates.minify));
-
-            stream.pipe(html2js(conf.templates.html2js))
+            stream = gulp.src(templateFiles)
+                .pipe(iff(conf.templates.minify, function(){
+                    return minHtml(conf.templates.minify);
+                }))
+                .pipe(html2js(conf.templates.html2js))
                 .pipe(iff(conf.scripts.concat, function(){return concat('template.js')}))
                 .pipe(iff(conf.scripts.minify, ngAnnotate))
                 .pipe(iff(conf.scripts.minify, uglify))

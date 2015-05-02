@@ -9,7 +9,7 @@ config(['$routeProvider', function($routeProvider) {
   $routeProvider
       .when('/test', {
         controller: 'TestCtrl',
-        templateUrl: 'feat/layoutTools/tmpl/test.html'
+        templateUrl: 'feat/featureA/tmpl/test.html'
       })
       .otherwise({redirectTo: '/test'});
 }]);
