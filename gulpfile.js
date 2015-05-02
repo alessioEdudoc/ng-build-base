@@ -290,7 +290,6 @@ gulp.task('test', ['karma','plato']);
 
 gulp.task('plato', function() {
 
-    // FIXME centralize paths
     var testFiles = [
         'app/app.js',
         'app/feat/**/!(*.test).js' // include non-test js files
@@ -311,7 +310,6 @@ gulp.task('plato', function() {
 
 gulp.task('karma', function() {
 
-    // FIXME centralize vendor paths
     var testFiles = [
         'app/bower_components/angular/angular.js',
         'app/bower_components/angular-route/angular-route.js',
