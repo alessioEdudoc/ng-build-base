@@ -18,7 +18,8 @@ var gulp = require('gulp-param')(require('gulp'), process.argv),
     bumper = require('gulp-bump'),
     filesize = require('gulp-filesize'),
     jedit = require('gulp-json-editor'),
-    karma = require('gulp-karma')
+    karma = require('gulp-karma'),
+    plato = require('gulp-plato')
     ;
 
 var conf,       // will contain the configuration object
@@ -283,16 +284,43 @@ gulp.task('watch', function (c) {
 });
 
 
-var testFiles = [
-    'app/bower_components/angular/angular.js',
-    'app/bower_components/angular-route/angular-route.js',
-    'app/bower_components/angular-mocks/angular-mocks.js',
-    'app/app.js',
-    'app/feat/**/*!(.test).js', // first, include non-test js files
-    'app/feat/**/*.test.js'     // then, include the test specs
-];
+// test tasks
+gulp.task('test', ['karma','plato']);
 
-gulp.task('test', function() {
+
+gulp.task('plato', function() {
+
+    // FIXME centralize paths
+    var testFiles = [
+        'app/app.js',
+        'app/feat/**/!(*.test).js' // include non-test js files
+    ];
+
+    return gulp.src(testFiles)
+        .pipe(plato('./report/complexity', {
+            jshint: {
+                options: {
+                    strict: true
+                }
+            },
+            complexity: {
+                trycatch: true
+            }
+        }));
+});
+
+gulp.task('karma', function() {
+
+    // FIXME centralize paths
+    var testFiles = [
+        'app/bower_components/angular/angular.js',
+        'app/bower_components/angular-route/angular-route.js',
+        'app/bower_components/angular-mocks/angular-mocks.js',
+        'app/app.js',
+        'app/feat/**/!(*.test).js', // first, include non-test js files
+        'app/feat/**/*.test.js'     // then, include the test specs
+    ];
+
     // Be sure to return the stream
     return gulp.src(testFiles)
         .pipe(karma({

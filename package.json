@@ -23,6 +23,7 @@
     "gulp-minify-html": "~1.0.2",
     "gulp-ng-annotate": "~0.5.2",
     "gulp-param": "~0.6.3",
+    "gulp-plato": "^1.0.2",
     "gulp-uglify": "~1.2.0",
     "gulp-util": "^3.0.4",
     "gulp-watch": "^4.2.4",
