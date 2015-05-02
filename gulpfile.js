@@ -17,7 +17,8 @@ var gulp = require('gulp-param')(require('gulp'), process.argv),
     bust = require('gulp-buster'),
     bumper = require('gulp-bump'),
     filesize = require('gulp-filesize'),
-    jedit = require('gulp-json-editor')
+    jedit = require('gulp-json-editor'),
+    karma = require('gulp-karma')
     ;
 
 var conf,       // will contain the configuration object
@@ -281,3 +282,25 @@ gulp.task('watch', function (c) {
 
 });
 
+
+var testFiles = [
+    'app/bower_components/angular/angular.js',
+    'app/bower_components/angular-route/angular-route.js',
+    'app/bower_components/angular-mocks/angular-mocks.js',
+    'app/app.js',
+    'app/feat/**/*!(.test).js', // first, include non-test js files
+    'app/feat/**/*.test.js'     // then, include the test specs
+];
+
+gulp.task('test', function() {
+    // Be sure to return the stream
+    return gulp.src(testFiles)
+        .pipe(karma({
+            configFile: 'karma.conf.js',
+            action: 'run'
+        }))
+        .on('error', function(err) {
+            // Make sure failed tests cause gulp to exit non-zero
+            throw err;
+        });
+});

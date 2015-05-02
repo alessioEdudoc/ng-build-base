@@ -1,7 +1,7 @@
 {
   "name": "ng-build-base",
   "description": "A Gulp build system for AngularJS - Bootstrap - LESS projects",
-  "version": "0.0.0",
+  "version": "0.0.1-build.14",
   "homepage": "",
   "license": "MIT",
   "private": true,
@@ -10,8 +10,6 @@
     "angular-route": "1.2.x",
     "angular-loader": "1.2.x",
     "angular-mocks": "~1.2.x",
-    "html5-boilerplate": "~4.3.0",
-    "angular-bootstrap": "~0.12.1",
-    "bootstrap": "~3.3.4"
+    "html5-boilerplate": "~4.3.0"
   }
 }
