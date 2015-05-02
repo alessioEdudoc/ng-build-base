@@ -10,7 +10,7 @@ module.exports = {
             length : 12,
             algo : 'md5'    // accepts every algorythm accepted by crypto.createHash()
         },
-        templates : true,   // enable bust cache for templates
+        templates : false,   // enable bust cache for templates
         scripts : true,     // enable bust cache for scripts
         styles : true       // enable bust cache for stylesheets
     },
@@ -98,7 +98,7 @@ module.exports = {
         },
         html2js : {
             base: 'app/',               // the base for the template
-            outputModuleName: 'myApp',  // the module name to use
+            outputModuleName: 'templates',  // the module name to use
             useStrict: true             // use strict
         }
     },

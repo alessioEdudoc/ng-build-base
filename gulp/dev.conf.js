@@ -98,7 +98,7 @@ module.exports = {
         },
        html2js : {
            base: 'app/',               // the base for the template
-           outputModuleName: 'myApp',  // the module name to use
+           outputModuleName: 'templates',  // the module name to use
            useStrict: true             // use strict
        }*/
     },

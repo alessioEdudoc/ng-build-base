@@ -1,4 +1,5 @@
 var gulp = require('gulp-param')(require('gulp'), process.argv),
+    merge = require('merge-stream'),
     path = require('path'),
     fs = require('fs'),
     _ = require('underscore'),
@@ -86,29 +87,41 @@ var task = {
             .pipe(gulp.dest('./build/bower_components'));
     },
 
+
     js : function () {
 
         // takes all js files BUT the unit test files
-        var stream;
-        var sourceFiles = ['!./**/*.test.js', './app/app.js', './app/feat/**/*.js'];
-
         if (conf.scripts.minify) {
-            stream = gulp.src(sourceFiles)
-                .pipe(concat('app.min.js'))
+            return gulp.src([
+                    '!./**/*.test.js',
+                    './app/modules/app.js',
+                    './app/feat/**/*.js'
+                ])
+                .pipe(iff(conf.scripts.concat, function() {
+                    return concat('app.min.js');
+                }))
                 .pipe(ngAnnotate())
                 .pipe(uglify(conf.scripts.minify))
                 .pipe(gulp.dest('./build/js'))
                 .pipe(filesize());
         }
         else {
-            stream = gulp.src(sourceFiles)
+            var stream = gulp.src(['!./**/*.test.js', './app/feat/**/*.js'])
                 .pipe(gulp.dest('./build/feat'))
                 .pipe(filesize());
+
+            var stream2 = gulp.src('./app/modules/app.js')
+                .pipe(gulp.dest('./build/js'))
+                .pipe(filesize());
+
+            if (conf.bustCache.scripts) {
+                stream.pipe(bust(conf.bustCache.opts)).pipe(gulp.dest('.'));
+                stream2.pipe(bust(conf.bustCache.opts)).pipe(gulp.dest('.'));
+            }
+            return merge(stream, stream2);
         }
 
-        if (conf.bustCache.scripts)
-            return stream.pipe(bust(conf.bustCache.opts)).pipe(gulp.dest('.'));
-        return stream;
+
     },
 
     templates : function() {
@@ -122,7 +135,7 @@ var task = {
                     return minHtml(conf.templates.minify);
                 }))
                 .pipe(html2js(conf.templates.html2js))
-                .pipe(iff(conf.scripts.concat, function(){return concat('template.js')}))
+                .pipe(iff(conf.scripts.concat, function(){return concat('templates.js')}))
                 .pipe(iff(conf.scripts.minify, ngAnnotate))
                 .pipe(iff(conf.scripts.minify, uglify))
                 .pipe(gulp.dest('./build/js'))
@@ -144,7 +157,14 @@ var task = {
 
         var target = gulp.src('./app/index.html');
         // It's not necessary to read the files (will speed up things), we're only after their paths:
-        var sources = gulp.src(['./build/js/*.js', './build/feat/**/*.js', './build/css/*.css'], {read: false});
+        var sources = gulp.src([
+            'build/js/templates.js',
+            'build/js/template-list.js',
+            'build/js/app.js',
+            './build/js/*.js',
+            './build/feat/**/*.js',
+            './build/css/*.css'
+        ], {read: false});
 
 
         var str = fs.readFileSync('./'+conf.bustCache.opts.fileName, "utf8");
@@ -179,6 +199,59 @@ var task = {
 
     },
 
+
+    injectTemplates : function () {
+
+        var target = gulp.src('./app/modules/template-list.js');
+        // It's not necessary to read the files (will speed up things), we're only after their paths:
+        var sources = gulp.src([ './app/feat/**/*.html'], {read: false});
+
+        var str = fs.readFileSync('./'+conf.bustCache.opts.fileName, "utf8");
+
+        var hashes = JSON.parse(str);
+        var buildTime = Date.now().toString().substring(0, conf.bustCache.opts.length);
+
+        var stream = target
+            .pipe(inject(sources, {
+                read : false,
+                starttag: '//#inject:{{ext}}',
+                endtag:'//#endinject',
+                transform : function (filepath) {
+                    var buildDir = 'build/';
+                    var relativePath = filepath.substring(filepath.indexOf(buildDir)+buildDir.length);
+                    var normalizedPath = buildDir+relativePath;
+                    var ar = relativePath.split('/');
+                    ar[3] = ar[3].replace('.html','');
+
+                    var hash = (conf.bustCache.type === 'hash' ? hashes[normalizedPath] : buildTime);
+
+                    var part = "\t"+ar[1]+"_"+ar[3]+" : '"+relativePath;
+                    if (!conf.scripts.html2js && conf.bustCache.templates && hash)
+                        part += '?'+conf.bustCache.paramKey+'='+hash;
+
+                    return part + "'";
+                }
+            }))
+            .pipe(gulp.dest('./build/js'));
+
+        if (conf.bustCache.templates)
+            return stream.pipe(bust(conf.bustCache.opts)).pipe(gulp.dest('.'));
+        return stream;
+
+    },
+
+    concatJs : function(){
+
+        if (!conf.scripts.concat)
+            return;
+
+        return gulp.src(['build/js/template-list.js', 'build/js/templates.js', 'build/js/app?(.min).js'])
+            .pipe(concat('app'+(conf.scripts.minify ? '.min' : '')+'.js'))
+            .pipe(gulp.dest('build/js'))
+            .on('end', function(){
+                del.sync(['build/js/templates.js', 'build/js/template-list.js', 'build/js/app.js']);
+            });
+    },
 
     bump : function () {
 
@@ -216,7 +289,7 @@ var task = {
             bumpKey = (bump.match(/^\d\.\d\.\d$/) ? 'version' : 'type')
             bumpValue = bump;
         }
-        return gulp.run('bump');
+        return gulp.run('build');
     }
 
 };
@@ -230,8 +303,12 @@ gulp.task('less', ['clean'], task.less);
 gulp.task('vendor', ['clean'], task.vendor);
 gulp.task('js', ['clean'], task.js);
 gulp.task('templates', ['clean'], task.templates);
-gulp.task('inject', ['vendor', 'js','templates','less'], task.inject);
-gulp.task('bump', ['inject'], task.bump);
+gulp.task('injectTemplates', ['js', 'templates'], task.injectTemplates);
+gulp.task('concatJs', ['js','templates','injectTemplates'], task.concatJs);
+gulp.task('inject', ['vendor', 'js','templates','injectTemplates','less', 'concatJs'], task.inject);
+gulp.task('bump', task.bump);
+
+gulp.task('build', ['inject', 'bump'], task.bump);
 
 gulp.task('default', task.default); // main task
 
@@ -275,7 +352,7 @@ gulp.task('watch', function (c) {
             .on('end', task.inject);
     });
 
-    gulp.watch(['./app/app.js', './app/feat/**/*.js'], conf.watch, function(){
+    gulp.watch(['./app/modules/app.js', './app/feat/**/*.js'], conf.watch, function(){
         console.log('watch js: ');
         task.js()
             .on('end', task.inject);
@@ -291,7 +368,7 @@ gulp.task('test', ['karma','plato']);
 gulp.task('plato', function() {
 
     var testFiles = [
-        'app/app.js',
+        'app/modules/app.js',
         'app/feat/**/!(*.test).js' // include non-test js files
     ];
 
@@ -314,7 +391,7 @@ gulp.task('karma', function() {
         'app/bower_components/angular/angular.js',
         'app/bower_components/angular-route/angular-route.js',
         'app/bower_components/angular-mocks/angular-mocks.js',
-        'app/app.js',
+        'app/modules/app.js',
         'app/feat/**/!(*.test).js', // first, include non-test js files
         'app/feat/**/*.test.js'     // then, include the test specs
     ];
@@ -330,3 +407,4 @@ gulp.task('karma', function() {
             throw err;
         });
 });
+
