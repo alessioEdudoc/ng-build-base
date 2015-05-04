@@ -13,7 +13,8 @@ var gulp = require('gulp-param')(require('gulp'), process.argv),
     karma = require('gulp-karma'),
     plato = require('gulp-plato'),
     jshint = require('gulp-jshint'),
-    jedit = require('gulp-json-editor')
+    jedit = require('gulp-json-editor'),
+    ngdoc = require('gulp-ngdocs')
     ;
 
 
@@ -150,7 +151,7 @@ gulp.task('meta-align', ['js'], function(){
 gulp.task('build', ['clean', 'index', 'vendor', 'less', 'templates', 'template-list', 'js']);
 
 
-gulp.task('default', ['build', 'meta-align']);
+gulp.task('default', ['build', 'meta-align', 'ngdoc']);
 
 
 // ============================= TEST =============================== //
@@ -218,3 +219,17 @@ gulp.task('jshint', function() {
         .pipe(jshint.reporter('fail'));
 });
 
+gulp.task('ngdoc', function() {
+
+    var testFiles = [
+        '!src/**/*.test.js', // exclude test js files
+        'src/modules/*.js',
+        'src/modules/**/*.js'
+    ];
+
+    return gulp.src(testFiles)
+        .pipe(ngdoc.process({
+            html5Mode : false
+        }))
+        .pipe(gulp.dest('docs'));
+});
