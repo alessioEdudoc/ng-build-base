@@ -1,5 +1,5 @@
 /*jshint strict: false */
-angular.module('myApp').controller('TestCtrl',function($scope){
+angular.module('myApp').controller('TestCtrl',function($scope, M){
 
-    $scope.name = 'Alex!!!';
+    $scope.name = M.name;
 });

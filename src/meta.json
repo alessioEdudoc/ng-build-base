@@ -1,0 +1,10 @@
+{
+  "version" : "0.0.0",
+  "env" : "dev",
+  "name" : "My Angular App",
+
+  "description" : "Just a demo angular application",
+  "license" : "MIT",
+  "homepage" : "http://myhomepage.something",
+  "repository" : "https://github.com/sefvef/ng-build-base"
+}

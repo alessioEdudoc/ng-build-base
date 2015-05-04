@@ -1,5 +1,5 @@
 var gulp = require('gulp-param')(require('gulp'), process.argv),
-
+    fs = require('fs'),
     merge = require('merge-stream'),
     path = require('path'),
     glob = require('glob'),
@@ -92,9 +92,18 @@ gulp.task('template-list', ['js'], function(){
 
 
     // taking the list from the sources
-    return gulp.src('build/modules/templates/template-list.js')
+    return gulp.src('build/modules/_templ/template-list.js')
         .pipe(replace('/*##TEMPLATE_LIST##*/', ar.join(',\n')))
-        .pipe(gulp.dest('build/modules/templates/'));
+        .pipe(gulp.dest('build/modules/_templ/'));
+});
+
+gulp.task('meta', ['js'], function(){
+
+    var metaJson = fs.readFileSync('src/meta.json', 'utf8');
+    return gulp.src('build/modules/_meta/meta.js')
+        .pipe(replace('{/*##META_JSON##*/}', metaJson))
+        .pipe(gulp.dest('build/modules/_meta'));
+
 });
 
 gulp.task('templates', ['clean'],function(){
@@ -105,7 +114,7 @@ gulp.task('templates', ['clean'],function(){
 
 });
 
-gulp.task('index', ['vendor', 'less', 'templates', 'template-list', 'js'],function(){
+gulp.task('index', ['vendor', 'less', 'templates', 'meta', 'template-list', 'js'],function(){
 
     var src = [
         './build/modules/*.js',

@@ -1,0 +1,1 @@
+angular.module('_meta', []).constant('M',{/*##META_JSON##*/});
