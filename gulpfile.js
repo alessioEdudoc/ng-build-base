@@ -12,7 +12,8 @@ var gulp = require('gulp-param')(require('gulp'), process.argv),
     watch = require('gulp-watch'),
     karma = require('gulp-karma'),
     plato = require('gulp-plato'),
-    jshint = require('gulp-jshint')
+    jshint = require('gulp-jshint'),
+    jedit = require('gulp-json-editor')
     ;
 
 
@@ -128,10 +129,28 @@ gulp.task('index', ['vendor', 'less', 'templates', 'meta', 'template-list', 'js'
 });
 
 
+gulp.task('meta-align', ['js'], function(){
+    var meta = JSON.parse(fs.readFileSync('src/meta.json', 'utf8'));
+    var bowerMeta = _.pick(meta, ['name', 'version', 'description', 'license', 'homepage']);
+    var nodeMeta = _.pick(meta, ['name', 'version', 'description', 'license', 'repository']);
+
+    var bowerStream = gulp.src('bower.json')
+        .pipe(jedit(bowerMeta))
+        .pipe(gulp.dest('.'));
+
+    var nodeStream = gulp.src('package.json')
+        .pipe(jedit(nodeMeta))
+        .pipe(gulp.dest('.'));
+
+    return merge(bowerStream, nodeStream);
+});
+
+
+
 gulp.task('build', ['clean', 'index', 'vendor', 'less', 'templates', 'template-list', 'js']);
 
 
-gulp.task('default', ['build']);
+gulp.task('default', ['build', 'meta-align']);
 
 
 // ============================= TEST =============================== //

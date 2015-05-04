@@ -1,8 +1,8 @@
 {
-  "name": "ng-build-base",
+  "name": "My Angular App",
   "private": true,
-  "version": "0.0.1-build.1",
-  "description": "A Gulp build system for AngularJS - Bootstrap - LESS projects",
+  "version": "0.0.0",
+  "description": "Just a demo angular application",
   "repository": "https://github.com/sefvef/ng-build-base",
   "license": "MIT",
   "devDependencies": {
