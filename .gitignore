@@ -8,3 +8,4 @@ tmp
 build/
 busters.json
 report/
+.jshintrc

@@ -21,7 +21,7 @@ module.exports = function(config){
             ],
 
     preprocessors: {
-        './app/feat/**/!(*.test).js': ['coverage'] // all non-test files in feat folder
+        './build/modules/**/!(*.test).js': ['coverage'] // all non-test files in feat folder
     },
 
     junitReporter : {
