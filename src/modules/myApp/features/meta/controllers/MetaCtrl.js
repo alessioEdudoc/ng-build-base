@@ -6,7 +6,7 @@
  *
  * @requires M
  */
-angular.module('myApp').controller('MetaCtrl',function($scope, M){
+angular.module('##THIS_MODULE##').controller('MetaCtrl',function($scope, M){
 
     $scope = angular.extend($scope, M);
 });

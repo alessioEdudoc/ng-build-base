@@ -14,7 +14,8 @@ var gulp = require('gulp-param')(require('gulp'), process.argv),
     plato = require('gulp-plato'),
     jshint = require('gulp-jshint'),
     jedit = require('gulp-json-editor'),
-    ngdoc = require('gulp-ngdocs')
+    ngdoc = require('gulp-ngdocs'),
+    foreach = require('gulp-foreach')
     ;
 
 
@@ -65,10 +66,18 @@ gulp.task('less', ['clean'],function(){
 
 gulp.task('js', ['clean'],function(){
 
+
     return gulp.src([
         '!./**/*.test.js',
         'src/modules/**/*.js'
-    ]).pipe(gulp.dest('build/modules'));
+    ])
+        .pipe(foreach(function(stream, file){
+
+            var modName = file.path.match(/modules\/([^/]+)\//)[1];
+            console.log(modName);
+            return stream.pipe(replace(/##THIS_MODULE##/, modName));
+        }))
+        .pipe(gulp.dest('build/modules'));
 
 });
 
