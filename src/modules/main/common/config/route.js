@@ -3,7 +3,7 @@ app.config(['$routeProvider', 'T', function($routeProvider, T) {
     $routeProvider
         .when('/test', {
             controller: 'TestCtrl',
-            templateUrl: T.featureA_template1
+            templateUrl: T.main_featureA_template1
         })
         .otherwise({redirectTo: '/test'});
 }]);

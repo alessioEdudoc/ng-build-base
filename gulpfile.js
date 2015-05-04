@@ -83,13 +83,15 @@ gulp.task('template-list', ['js'], function(){
         var dir = 'src/';
         var relativePath = filePath.substring(filePath.indexOf(dir)+dir.length);
 
-
-        var ftDir = 'features',
+        // FIXME common
+        var modDir = 'modules',
+            ftDir = 'features',
             tmpDir = 'templates';
 
+        var module = filePath.substring(filePath.indexOf(modDir)+ftDir.length, filePath.indexOf(ftDir)-1);
         var feature = filePath.substring(filePath.indexOf(ftDir)+ftDir.length+1, filePath.indexOf(tmpDir)-1);
         var templ = filePath.substring(filePath.indexOf(tmpDir)+tmpDir.length+1, filePath.indexOf('.html'));
-        ar.push("  " + feature + "_" + templ + " : '" + relativePath + "'");
+        ar.push("  " + module + "_" + feature + "_" + templ + " : '" + relativePath + "'");
     });
 
 
@@ -119,6 +121,8 @@ gulp.task('templates', ['clean'],function(){
 gulp.task('index', ['vendor', 'less', 'templates', 'meta', 'template-list', 'js'],function(){
 
     var src = [
+        './build/css/*.css',
+        './build/css/**/*.css',
         './build/modules/*.js',
         './build/modules/**/*.js'
     ];
