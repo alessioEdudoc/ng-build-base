@@ -30,6 +30,7 @@
     "gulp-param": "~0.6.3",
     "gulp-plato": "^1.0.2",
     "gulp-replace": "^0.5.3",
+    "gulp-shell": "^0.4.1",
     "gulp-uglify": "~1.2.0",
     "gulp-util": "^3.0.4",
     "gulp-watch": "^4.2.4",
@@ -44,6 +45,7 @@
     "underscore": "^1.8.3"
   },
   "scripts": {
+    "dev": "gulp --gulpfile gulp/dev.gulpfile.js --cwd .",
     "postinstall": "bower install",
     "prestart": "npm install",
     "start": "http-server -a localhost -p 8000 -c-1",

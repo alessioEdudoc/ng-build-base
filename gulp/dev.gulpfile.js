@@ -6,7 +6,7 @@ var gulp = require('gulp-param')(require('gulp'), process.argv),
     _ = require('underscore'),
     inject = require('gulp-inject'),
     less = require('gulp-less'),
-    concat = require('gulp-concat'),
+    util = require('gulp-util'),
     replace = require('gulp-replace'),
     del = require('del'),
     watch = require('gulp-watch'),
@@ -57,7 +57,7 @@ gulp.task('vendor', ['clean'], function(){
 gulp.task('less', ['clean'],function(){
     return gulp.src([
         'src/modules/**/*.less'
-        ])
+    ])
         .pipe(less())
         .pipe(gulp.dest('build/css'));
 });
@@ -76,28 +76,53 @@ gulp.task('js', ['clean'],function(){
 
 gulp.task('template-list', ['js'], function(){
 
-    var ar = [],
-        files = glob.sync('src/modules/**/*.html');
+    var entries = [],
+        keys = [],
+        files = glob.sync('src/modules/**/features/**/*.html');
 
     _.forEach(files, function(filePath){
         var dir = 'src/';
         var relativePath = filePath.substring(filePath.indexOf(dir)+dir.length);
 
-        // FIXME common
-        var modDir = 'modules',
-            ftDir = 'features',
-            tmpDir = 'templates';
+        var arr = relativePath.split('/');
 
-        var module = filePath.substring(filePath.indexOf(modDir)+ftDir.length, filePath.indexOf(ftDir)-1);
-        var feature = filePath.substring(filePath.indexOf(ftDir)+ftDir.length+1, filePath.indexOf(tmpDir)-1);
-        var templ = filePath.substring(filePath.indexOf(tmpDir)+tmpDir.length+1, filePath.indexOf('.html'));
-        ar.push("  " + module + "_" + feature + "_" + templ + " : '" + relativePath + "'");
+        var module = arr[1];
+        var feature = arr[3];
+        var templ = arr[arr.length-1].replace('.html', '');
+
+        var key = module + "_" + feature + "_" + templ;
+        if (_.contains(keys, key)) {
+            throw "Template key collision: more than one template with key '"+key+"'";
+        }
+        keys.push(key);
+        entries.push("  " + key + " : '" + relativePath + "'");
     });
+
+
+    files = glob.sync('src/modules/**/common/directives/**/*.html');
+
+    _.forEach(files, function(filePath){
+        var dir = 'src/';
+        var relativePath = filePath.substring(filePath.indexOf(dir)+dir.length);
+
+        var arr = relativePath.split('/');
+
+        var module = arr[1];
+        var directive = arr[4];
+        var templ = arr[arr.length-1].replace('.html', '');
+        var key = module + "_" + directive + "_" + templ;
+        if (_.contains(keys, key)) {
+            throw "Template key collision: more than one template with key '"+key+"'";
+        }
+        keys.push(key);
+        entries.push("  " + key + " : '" + relativePath + "'");
+    });
+
 
 
     // taking the list from the sources
     return gulp.src('build/modules/_templ/template-list.js')
-        .pipe(replace('/*##TEMPLATE_LIST##*/', ar.join(',\n')))
+        .pipe(replace('/*##TEMPLATE_LIST##*/', entries.join(',\n')))
         .pipe(gulp.dest('build/modules/_templ/'));
 });
 
