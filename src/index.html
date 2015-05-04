@@ -9,11 +9,12 @@
   <title>My AngularJS App</title>
   <meta name="description" content="">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="vendor/html5-boilerplate/css/normalize.css">
-  <link rel="stylesheet" href="vendor/html5-boilerplate/css/main.css">
+  <!-- vendor:head:css -->
+  <!-- endinject -->
   <!-- inject:css -->
   <!-- endinject -->
-  <script src="vendor/html5-boilerplate/js/vendor/modernizr-2.6.2.min.js"></script>
+  <!-- vendor:head:js -->
+  <!-- endinject -->
 </head>
 <body>
 
@@ -23,13 +24,8 @@
 
   <div ng-view></div>
 
-
-
-  <!-- In production use:
-  <script src="//ajax.googleapis.com/ajax/libs/angularjs/x.x.x/angular.min.js"></script>
-  -->
-  <script src="vendor/angular/angular.js"></script>
-  <script src="vendor/angular-route/angular-route.js"></script>
+  <!-- vendor:body:js -->
+  <!-- endinject -->
   <!-- inject:js -->
   <!-- endinject -->
 </body>

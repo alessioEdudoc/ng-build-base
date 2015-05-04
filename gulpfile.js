@@ -126,8 +126,22 @@ gulp.task('index', ['vendor', 'less', 'templates', 'meta', 'template-list', 'js'
         './build/modules/*.js',
         './build/modules/**/*.js'
     ];
+
+    var vendorHead = [
+        './build/vendor/html5-boilerplate/css/normalize.css',
+        './build/vendor/html5-boilerplate/css/main.css',
+        './build/vendor/html5-boilerplate/js/vendor/modernizr-2.6.2.min.js'
+    ];
+
+    var vendorBody = [
+        './build/vendor/angular/angular.js',
+        './build/vendor/angular-route/angular-route.js'
+    ];
+
     return gulp.src('src/index.html')
         .pipe(injectIntoIndex(src, '<!-- inject:{{ext}} -->'))
+        .pipe(injectIntoIndex(vendorHead, '<!-- vendor:head:{{ext}} -->'))
+        .pipe(injectIntoIndex(vendorBody, '<!-- vendor:body:{{ext}} -->'))
         .pipe(gulp.dest('build'));
 
 
