@@ -45,9 +45,9 @@
     "underscore": "^1.8.3"
   },
   "scripts": {
-    "gulp": "gulp dev-default",
-    "prod": "gulp --gulpfile gulp/prod.gulpfile.js --cwd .",
-    "dev": "gulp --gulpfile gulp/dev.gulpfile.js --cwd .",
+    "gulp": "gulp",
+    "prod": "gulp prod",
+    "dev": "gulp dev",
     "postinstall": "bower install",
     "prestart": "npm install",
     "start": "http-server -a localhost -p 8000 -c-1",

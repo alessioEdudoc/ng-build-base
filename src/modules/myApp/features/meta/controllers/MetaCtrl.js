@@ -1,10 +1,10 @@
 /*jshint strict: false */
 /**
- * @ngdoc controller
+ * @ngdoc
  * @name myApp.controller:MetaCtrl
  * @requires M
  *
- * 
+ *
  * @description This is the demo application controller
  *
  * 
