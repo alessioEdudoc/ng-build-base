@@ -1,4 +1,4 @@
-angular.module('##THIS_MODULE##').config(['$routeProvider', 'T', function($routeProvider, T) {
+angular.module('myApp').config(['$routeProvider', 'T', function($routeProvider, T) {
     "use strict";
     $routeProvider
         .when('/meta', {
