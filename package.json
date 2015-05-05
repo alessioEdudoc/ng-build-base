@@ -45,6 +45,8 @@
     "underscore": "^1.8.3"
   },
   "scripts": {
+    "gulp": "gulp dev-default",
+    "prod": "gulp --gulpfile gulp/prod.gulpfile.js --cwd .",
     "dev": "gulp --gulpfile gulp/dev.gulpfile.js --cwd .",
     "postinstall": "bower install",
     "prestart": "npm install",

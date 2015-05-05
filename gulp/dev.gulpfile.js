@@ -1,4 +1,4 @@
-var gulp = require('gulp-param')(require('gulp'), process.argv),
+var gulp = require('gulp'),
     fs = require('fs'),
     merge = require('merge-stream'),
     path = require('path'),
@@ -14,6 +14,7 @@ var gulp = require('gulp-param')(require('gulp'), process.argv),
     plato = require('gulp-plato'),
     jshint = require('gulp-jshint'),
     jedit = require('gulp-json-editor'),
+    ngAnnotate = require('gulp-ng-annotate'),
     ngdoc = require('gulp-ngdocs')
     ;
 
@@ -68,7 +69,9 @@ gulp.task('js', ['clean'],function(){
     return gulp.src([
         '!./**/*.test.js',
         'src/modules/**/*.js'
-    ]).pipe(gulp.dest('build/modules'));
+    ])
+    .pipe(ngAnnotate())
+    .pipe(gulp.dest('build/modules'));
 
 });
 
@@ -123,6 +126,7 @@ gulp.task('template-list', ['js'], function(){
     // taking the list from the sources
     return gulp.src('build/modules/_templ/template-list.js')
         .pipe(replace('/*##TEMPLATE_LIST##*/', entries.join(',\n')))
+        .pipe(ngAnnotate())
         .pipe(gulp.dest('build/modules/_templ/'));
 });
 
@@ -194,7 +198,7 @@ gulp.task('meta-align', ['js'], function(){
 gulp.task('build', ['clean', 'index', 'vendor', 'less', 'templates', 'template-list', 'js']);
 
 
-gulp.task('default', ['build', 'meta-align', 'ngdoc']);
+gulp.task('default', ['build', 'meta-align', 'ngdoc', 'karma']);
 
 
 // ============================= TEST =============================== //

@@ -1,4 +1,4 @@
-describe('TestCtrl', function () {
+describe('MetaCtrl', function () {
     'use strict';
 
     var scope;
@@ -10,7 +10,7 @@ describe('TestCtrl', function () {
 
 
 
-        $controller('TestCtrl', {
+        $controller('MetaCtrl', {
             $scope: scope
         });
     }));
@@ -22,6 +22,16 @@ describe('TestCtrl', function () {
 
     });
 
+    it('should have a property "version"', function () {
 
+        expect(scope.version).toBeDefined();
+
+    });
+
+    it('should have a property "description"', function () {
+
+        expect(scope.description).toBeDefined();
+
+    });
 
 });
