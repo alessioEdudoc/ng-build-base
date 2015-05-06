@@ -9,7 +9,9 @@
  *
  * 
  */
-angular.module('myApp').controller('MetaCtrl',function($scope, M){
+angular.module('myApp').controller('MetaCtrl',function($scope,
+
+                                                       M){
 
     $scope = angular.extend($scope, M);
 });

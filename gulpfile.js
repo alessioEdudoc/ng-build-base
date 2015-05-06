@@ -274,65 +274,6 @@ gulp.task('jshint', function() {
         .pipe(jshint.reporter('fail'));
 });
 
-gulp.task('ngdoc', function() {
-
-    var testFiles = [
-        '!src/**/*.test.js', // exclude test js files
-        'src/modules/*.js',
-        'src/modules/**/*.js'
-    ];
-
-    return gulp.src(testFiles)
-        .pipe(ngdoc.process({
-            html5Mode : false
-        }))
-        .pipe(gulp.dest('docs'));
-});
-
-
-
-
-/**
- * Increments the version number in all the metadata json files.
- * Called by default at every prod build
- * Can be called manually with
- *
- * gulp version -v 0.1.2
- *
- * or
- *
- * gulp version -v major   (major | minor | prerelease)
- */
-gulp.task('version', function(version){
-
-    if (version) {
-        var options = {};
-        if (version.match(/major|minor|patch|prerelease|build/)) {
-            options = {
-                preid: 'build',
-                type: version
-            };
-        }
-        else if (version.match(/\d{1,3}\.\d{1,3}\.\d{1,3}/)) {
-            options = {
-                version: version
-            };
-        } else if (_.isUndefined(version)) {
-            options = {
-                preid: 'build',
-                type: 'prerelease'
-            };
-        }
-        else {
-            throw "--version (-v) should be major|minor|patch|prerelease|build or a Semver version number (e.g. 1.0.2)";
-        }
-
-        return gulp.src(['bower.json', 'package.json', 'src/meta.json'])
-            .pipe(bump(options))
-            .pipe(gulp.dest('.'));
-    }
-});
-
 
 
 
@@ -515,3 +456,84 @@ gulp.task('prod', ['js-prod', 'css-prod', 'index-prod', 'dev'], function(version
     return merge (curStream, srcStream);
 });
 
+
+//0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000//
+//                                     DOCUMENTATION TASKS
+//0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000//
+
+
+gulp.task('ngdoc', function() {
+
+    var testFiles = [
+        '!src/**/*.test.js', // exclude test js files
+        'src/modules/*.js',
+        'src/modules/**/*.js'
+    ];
+
+    return gulp.src(testFiles)
+        .pipe(ngdoc.process({
+            html5Mode : false
+        }))
+        .pipe(gulp.dest('docs'));
+});
+
+
+gulp.task('test', function() {
+
+
+    var entries = [];
+
+    var files = glob.sync('src/modules/**/!(.test).js');
+    files.concat(glob.sync('src/modules/!(.test).js'));
+
+    _.forEach(files, function(filePath){
+
+
+
+        if (!filePath || filePath.match(/\.test\.js$/))
+            return true;
+
+        var dir = 'src/';
+        var relativePath = filePath.substring(filePath.indexOf(dir)+dir.length);
+
+        var arr = relativePath.split('/');
+
+        var entry = {};
+
+        entry.module = arr[1];
+        entry.name = arr[arr.length-1].replace('.js', '');
+
+
+      //  console.log(filePath);
+        var str = fs.readFileSync(filePath).toString();
+        var ll = str.match(/\.(?:\s|\n)*(controller|factory|service|directive|config|run).*function(?:\s|\n)*\((?:\s|\n)*([^)]+?)(?:\s|\n)*\)/);
+
+        if (ll) {
+            entry.type = ll[1];
+            entry.args = ll[2].split(/\s*,\s*/);
+
+
+
+            if (entry.type === 'directive') {
+                var restr = str.match(/["']?restrict["']?(?:\s|\n)*:(?:\s|\n)*["']([AEC]+)["']/);
+                if (restr) {
+                    entry.restrict = restr[1];
+                }
+            }
+        } else if (ll = str.match(/\.(?:\s|\n)*constant(?:\s|\n)*\((?:\s|\n)*["']([a-zA-Z0-9_$]+)["']/)) {
+            entry.type = 'constant';
+            entry.name = ll[1];
+        } else if (ll = str.match(/angular(?:\s|\n)*\.(?:\s|\n)*module(?:\s|\n)*\((?:\s|\n)*["']([a-zA-Z0-9_$]+)["'](?:\s|\n)*,(?:\s|\n)*\[(?:\s|\n)*([^)]+?)(?:\s|\n)*\]/)) {
+            entry.type = 'module';
+            entry.name = ll[1];
+            entry.args = ll[2].match(/("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')/g);
+        }
+        entries.push(entry);
+    });
+
+    _.forEach(entries, function(entry){
+
+        // build the name if the dependency is in the project
+        console.log(entry);
+    });
+});

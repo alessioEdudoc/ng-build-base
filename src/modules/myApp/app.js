@@ -10,7 +10,7 @@
  * @requires _templ
  * @requires ngRoute
  */
-var app = angular.module('myApp', [
+angular.module('myApp', [
     '_meta', // auto-generated constant with development metadata
     '_templ',// constant object containing template mapping
     'ngRoute'
