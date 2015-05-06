@@ -65,7 +65,7 @@ In **production** mode:
 - The template files are minified and cached in the _templ Angular module
 - The CSS files are concatenated and minified and stored in the ```css/styles.min.css``` file
 - The JS files are concatenated and minified in the ```js/app.min.js``` file
-- The ```index.html``` is injected with the JS and CSS and then minified
+- The ```index.html``` is injected with the JS and CSS (with a cache buster query parameter hash) and then minified
 - The project version is bumped
 
 
