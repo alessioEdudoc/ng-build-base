@@ -1,4 +1,3 @@
-/*jshint strict: false */
 /**
  * @ngdoc
  * @name myApp.controller:MetaCtrl
@@ -9,9 +8,8 @@
  *
  * 
  */
-angular.module('myApp').controller('MetaCtrl',function($scope,
-
-                                                       M){
+angular.module('myApp').controller('MetaCtrl',function($scope, M){
+	"use strict";
 
     $scope = angular.extend($scope, M);
 });

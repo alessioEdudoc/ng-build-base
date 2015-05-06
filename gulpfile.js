@@ -62,6 +62,11 @@ gulp.task('vendor', ['clean'], function(){
         .pipe(gulp.dest('build/vendor'));
 });
 
+gulp.task('assets', ['clean'], function(){
+    return gulp.src(['src/assets/**'])
+        .pipe(gulp.dest('build/assets'));
+});
+
 
 gulp.task('less', ['clean'],function(){
     return gulp.src([
@@ -155,7 +160,7 @@ gulp.task('templates', ['clean'],function(){
 
 });
 
-gulp.task('index', ['vendor', 'less', 'templates', 'meta', 'template-list', 'js'],function(){
+gulp.task('index', ['vendor', 'assets', 'less', 'templates', 'meta', 'template-list', 'js'],function(){
 
     var src = [
         './build/styles/*.css',
@@ -478,62 +483,3 @@ gulp.task('ngdoc', function() {
 });
 
 
-gulp.task('test', function() {
-
-
-    var entries = [];
-
-    var files = glob.sync('src/modules/**/!(.test).js');
-    files.concat(glob.sync('src/modules/!(.test).js'));
-
-    _.forEach(files, function(filePath){
-
-
-
-        if (!filePath || filePath.match(/\.test\.js$/))
-            return true;
-
-        var dir = 'src/';
-        var relativePath = filePath.substring(filePath.indexOf(dir)+dir.length);
-
-        var arr = relativePath.split('/');
-
-        var entry = {};
-
-        entry.module = arr[1];
-        entry.name = arr[arr.length-1].replace('.js', '');
-
-
-      //  console.log(filePath);
-        var str = fs.readFileSync(filePath).toString();
-        var ll = str.match(/\.(?:\s|\n)*(controller|factory|service|directive|config|run).*function(?:\s|\n)*\((?:\s|\n)*([^)]+?)(?:\s|\n)*\)/);
-
-        if (ll) {
-            entry.type = ll[1];
-            entry.args = ll[2].split(/\s*,\s*/);
-
-
-
-            if (entry.type === 'directive') {
-                var restr = str.match(/["']?restrict["']?(?:\s|\n)*:(?:\s|\n)*["']([AEC]+)["']/);
-                if (restr) {
-                    entry.restrict = restr[1];
-                }
-            }
-        } else if (ll = str.match(/\.(?:\s|\n)*constant(?:\s|\n)*\((?:\s|\n)*["']([a-zA-Z0-9_$]+)["']/)) {
-            entry.type = 'constant';
-            entry.name = ll[1];
-        } else if (ll = str.match(/angular(?:\s|\n)*\.(?:\s|\n)*module(?:\s|\n)*\((?:\s|\n)*["']([a-zA-Z0-9_$]+)["'](?:\s|\n)*,(?:\s|\n)*\[(?:\s|\n)*([^)]+?)(?:\s|\n)*\]/)) {
-            entry.type = 'module';
-            entry.name = ll[1];
-            entry.args = ll[2].match(/("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')/g);
-        }
-        entries.push(entry);
-    });
-
-    _.forEach(entries, function(entry){
-
-        // build the name if the dependency is in the project
-        console.log(entry);
-    });
-});
