@@ -14,6 +14,7 @@ var gulp = require('gulp-param')(require('gulp'), process.argv),
     karma = require('gulp-karma'),
     plato = require('gulp-plato'),
     jshint = require('gulp-jshint'),
+    jscs = require('gulp-jscs'),
     jedit = require('gulp-json-editor'),
     ngAnnotate = require('gulp-ng-annotate'),
     ngdoc = require('gulp-ngdocs'),
@@ -107,6 +108,9 @@ gulp.task('template-list', ['js'], function(){
         var templ = arr[arr.length-1].replace('.html', '');
 
         var key = module + "_" + feature + "_" + templ;
+
+        key = key.toUpperCase();
+
         if (_.contains(keys, key)) {
             throw "Template key collision: more than one template with key '"+key+"'";
         }
@@ -274,6 +278,7 @@ gulp.task('jshint', function() {
     ];
 
     return gulp.src(testFiles)
+        .pipe(jscs())   // code style check
         .pipe(jshint())
         .pipe(jshint.reporter('cool-reporter'))
         .pipe(jshint.reporter('fail'));

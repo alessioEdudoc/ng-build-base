@@ -17,6 +17,6 @@
  *
  * <h2 style="color:red">This module is populated by the build system, do not modify</h2>
  */
-angular.module('_templ', []).constant('T',{
+angular.module('_templ', []).constant('T', {
 /*##TEMPLATE_LIST##*/
 });

@@ -8,8 +8,8 @@
  *
  * 
  */
-angular.module('myApp').controller('MetaCtrl',function($scope, M){
+angular.module('myApp').controller('MetaCtrl', function ($scope, M){
 	"use strict";
 
-    $scope = angular.extend($scope, M);
+	$scope = angular.extend($scope, M);
 });

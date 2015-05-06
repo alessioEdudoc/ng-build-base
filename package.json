@@ -19,6 +19,7 @@
     "gulp-html2js": "~0.2.0",
     "gulp-if-else": "^1.0.3",
     "gulp-inject": "~1.2.0",
+    "gulp-jscs": "^1.6.0",
     "gulp-jshint": "^1.10.0",
     "gulp-json-editor": "^2.2.1",
     "gulp-karma": "0.0.4",

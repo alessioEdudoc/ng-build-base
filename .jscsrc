@@ -1,0 +1,45 @@
+{
+  "disallowKeywordsOnNewLine": ["else"],
+  "disallowMixedSpacesAndTabs": "smart",
+  "disallowNewlineBeforeBlockStatements": true,
+  "requireCamelCaseOrUpperCaseIdentifiers": true,
+  "requireCapitalizedConstructors": true,
+  "requireCurlyBraces": [
+    "if",
+    "else",
+    "for",
+    "while",
+    "do",
+    "try",
+    "catch"
+  ],
+  "requireDotNotation": true,
+  // "requireLineBreakAfterVariableAssignment": true, // Doesn't work with for ( var i = 0, len = myArray.length; i < len; i++ )
+  "requireOperatorBeforeLineBreak": true,
+  "requireSpaceAfterBinaryOperators": true,
+  "requireSpaceAfterKeywords": [
+    "do",
+    "for",
+    "if",
+    "else",
+    "switch",
+    "case",
+    "try",
+    "catch",
+    "void",
+    "while",
+    "with",
+    "return",
+    "typeof"
+  ],
+  "requireSpaceAfterLineComment": true,
+  "requireSpaceBeforeKeywords": [
+    "else",
+    "while",
+    "catch"
+  ],
+ 
+  "requireYodaConditions": true,
+  "validateParameterSeparator": ", "
+
+}
