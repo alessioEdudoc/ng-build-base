@@ -14,10 +14,11 @@ Features:
 - Version bumping
 - Automatic script / stylesheet injection in the index file
 - Templates module (html2js)
-- Watch mode
 - Unit test (Karma)
+- E2E test (Protractor) with Page / Component abstraction structure
 - Coverage report (karma coverage)
 - Complexity report (Plato)
+- JS lint and code style checks
 
 
 
@@ -28,86 +29,66 @@ To get you started you can simply clone the repository and install the dependenc
 
 ### Prerequisites
 
-You need git to clone the ng-build-base repository. You can get git from
-[http://git-scm.com/](http://git-scm.com/).
+Git: [http://git-scm.com/](http://git-scm.com/).
 
-We also use a number of node.js tools to initialize and test ng-build-base. You must have node.js and
-its package manager (npm) installed.  You can get them from [http://nodejs.org/](http://nodejs.org/).
+NodeJS: [http://nodejs.org/](http://nodejs.org/).
 
-### Clone ng-build-base
-
-Clone the ng-build-base repository using [git][git]:
-
-```
-git clone https://github.com/sefvef/ng-build-base.git
-cd ng-build-base
-```
-
-If you just want to start a new project without the ng-build-base commit history then you can do:
-
-```bash
-git clone --depth=1 https://github.com/sefvef/ng-build-base.git <your-project-name>
-```
-
-The `depth=1` tells git to only pull down one commit worth of historical data.
 
 ### Install Dependencies
 
-We have two kinds of dependencies in this project: tools and angular framework code.  The tools help
-us manage and test the application.
-
-* We get the tools we depend upon via `npm`, the [node package manager][npm].
-* We get the angular code via `bower`, a [client-side code package manager][bower].
-
-We have preconfigured `npm` to automatically run `bower` so we can simply do:
+Run
 
 ```
 npm install
 ```
 
-Behind the scenes this will also call `bower install`.  You should find that you have two new
-folders in your project.
-
-* `node_modules` - contains the npm packages for the tools we need
-* `app/bower_components` - contains the angular framework files
-
-*Note that the `bower_components` folder would normally be installed in the root folder but
-angular-seed changes this location through the `.bowerrc` file.  Putting it in the app folder makes
-it easier to serve the files by a webserver.*
+to install node and bower components at once
 
 ### Build the Application
+The application can be built in development and production mode.
 
-To have a set of available **gulp** options and tasks, run
+In **development** mode:
 
+- A JS linter and code style check is performed
+- Unit tests are run
+- A coverage report is generated (in ```http://localhost:8000/report/coverage```)
+- A complexity report is generated (in ```http://localhost:8000/report/complexity```)
+- The project ```src``` folder structure is preserved in the ```build``` directory
+- The LESS files are compiled into CSS
+- The _meta and _templ modules are generated
+- The JS and CSS files are injected in the index.html file
+- The metadata in ```src/meta.json``` is aligned with ```bower.json``` and ```package.json```
+
+In **production** mode:
+
+- The application is built in development mode, then:
+- The template files are minified and cached in the _templ Angular module
+- The CSS files are concatenated and minified and stored in the ```css/styles.min.css``` file
+- The JS files are concatenated and minified in the ```js/app.min.js``` file
+- The ```index.html``` is injected with the JS and CSS and then minified
+- The project version is bumped
+
+
+If you have Gulp installed globally, run:
+
+```bash
+gulp dev               # builds the application in development mode
+gulp prod              # builds the application in production mode
+gulp prod -v 0.1.2     # builds in production mode and sets the version to 0.1.2
+gulp prod -v patch     # builds in production mode and bumps the patch version (2.2.2 -> 2.2.3)
+gulp prod -v minor     # builds in production mode and bumps the minor version (2.2.2-> 2.3.0)
+gulp prod -v major     # builds in production mode and bumps the major version (2.2.2 -> 3.0.0)
 ```
-gulp help
+Otherwise:
+
+```bash
+npm run dev            # builds the application in development mode
+npm run prod           # builds the application in production mode
+npm run prod-patch     # builds in production mode and bumps the patch version (2.2.2 -> 2.2.3)
+npm run prod-minor     # builds in production mode and bumps the minor version (2.2.2-> 2.3.0)
+npm run prod-major     # builds in production mode and bumps the major version (2.2.2 -> 3.0.0)
 ```
-Running ```gulp -c dev``` will build the application in "dev" mode (without optimizations like
-file minification, concatenation, html2js...)
 
-
-### Version bumping
-
-The version is automatically updated each time you build the application (not in watch mode).
-The version is usually in the form '1.2.3-build.4', where:
-1. is the **major** version
-2. is the **minor** version
-3. is the **patch** version
-4. is the **prerelease** version
-
-If no option is provided, then the prerelease version is automatically incremented.
-To increment major, minor or patch version, run ```gulp -v major```, ```gulp -v minor``` or ```gulp -v patch```
-If a version is incremented, all lower versions are resetted, e.g. running ```gulp -v minor``` will
-increment the minor version, and reset the patch and prerelease version.
-
-To set an arbitrary version number, run ```gulp -v 0.0.0``` (replace 0.0.0 with the version number)
-
-####Examples:
-
-- 1.0.2-build.3  ->  ```gulp```  ->  1.0.2-build.4
-- 1.0.2-build.3  ->  ```gulp -v minor```  ->  1.1.0
-- 1.0.2-build.3  ->  ```gulp -v major```  ->  2.0.0
-- 1.0.2-build.3  ->  ```gulp -v 1.2.3```  ->  1.2.3
 
 
 ### Run the Application
@@ -126,23 +107,47 @@ Now browse to the app at `http://localhost:8000/build/index.html`.
 ## Directory Layout
 
 ```
-app/                  --> all of the source files for the application
-  feat/                 --> all app specific features
-    <feature A>/              --> files related to feature "A"
-      ctrl/                    --> controllers related to feature "A"
-      tmpl/                    --> templates related to feature "A"
-  less/                       --> LESS files
-    styles.less               --> main LESS file
-  app.js                --> main application module
-  index.html            --> app layout file (the main html template file of the app)
-karma.conf.js         --> config file for running unit tests with Karma
-e2e-tests/            --> end-to-end tests
-  protractor-conf.js    --> Protractor config file
-  scenarios.js          --> end-to-end scenarios to be run by Protractor
-gulpfile.js           --> Gulp tasks definition
-  gulp/               --> build configuration files
+src/                  --> all of the source files for the application
+  vendor/                 --> bower third-party packages
+    ...
+  assets/                 --> assets folder for images, fonts etc.
+    ...
+  modules/                --> folder containing all Angular modules
+    <module name>/
+    
+      <module name>.js    --> the module declaration file, contains just the module dependency statement
+    
+      common/             --> contains all the code shared among the module features
+        config/           --> all the module .config  and  .run 
+        services/         --> all the module .service  and  .factory, and relative .test.js files
+        directives/       --> all the module .directive  and  related files (Controllers and Templates and test files)
+        filters/          --> all the module .filter
+        constants/        --> all the module .constant
+        
+      features/
+        <feature name>/   --> all Angular files related to a specific feature
+          controllers/    --> all Controllers relative to this feature, and their relative .test.js files
+          templates/      --> all Templates relative to this feature
+          
+  index.html              --> main index file (the main html template file of the app)
+  
+  
+karma.conf.js             --> config file for running unit tests with Karma
 
-build/                --> the compiled application files
+
+e2e-tests/                --> end-to-end tests
+  conf/                   --> Protractor config files
+    ...
+  abstract/               --> PageObject and Component abstraction objects
+    ...
+  pages/                  --> application-specific PageObjects
+    ...
+  specs/                  --> test-case specification files
+    ...
+gulpfile.js               --> Gulp tasks definition
+
+
+build/                    --> the compiled application files
 ```
 
 
@@ -158,8 +163,14 @@ configuration file to run them.
 
 To run the unit tests, use the supplied gulp task:
 
+```bash
+gulp karma
 ```
-gulp test
+
+or, if you don't have Gulp installed globally:
+
+```bash
+npm run test
 ```
 
 This script will start the Karma test runner to execute the unit tests.
@@ -171,20 +182,17 @@ A complexity html report will be generated, it will be available at ```http://lo
 
 ### End to end testing
 
-The build configuration comes with end-to-end tests, again written in [Jasmine][jasmine]. These tests
-are run with the [Protractor][protractor] End-to-End test runner.  It uses native events and has
-special features for Angular applications.
-
-* the configuration is found at `e2e-tests/protractor-conf.js`
-* the end-to-end tests are found in `e2e-tests/scenarios.js`
-
-Protractor simulates interaction with our web app and verifies that the application responds
-correctly. Therefore, our web server needs to be serving up the application, so that Protractor
-can interact with it.
+**Prerequisites**: you should have webdriver and protractor installed globally.
+Install them running 
 
 ```
-npm start
+npm install protractor -g
 ```
+**Then**:
+
+1. Run the HTTP server with ``` npm start ```
+2. Run the webdriver server with ``` webdriver-manager start ```
+3. Run protractor with ``` npm run e2e ```
 
 In addition, since Protractor is built upon WebDriver we need to install this.  There
 is a predefined script to do this:
@@ -206,41 +214,7 @@ This script will execute the end-to-end tests against the application being host
 development server.
 
 
-## Updating Angular
-
-You can update the tool dependencies by running:
-
-```
-npm update
-```
-
-This will find the latest versions that match the version ranges specified in the `package.json` file.
-
-You can update the Angular dependencies by running:
-
-```
-bower update
-```
-
-This will find the latest versions that match the version ranges specified in the `bower.json` file.
-
 
 ### Running the App during Development
 
-The angular-seed project comes preconfigured with a local development webserver.  It is a node.js
-tool called [http-server][http-server].  You can start this webserver with `npm start` but you may choose to
-install the tool globally:
-
-```
-sudo npm install -g http-server
-```
-
-Then you can start your own development web server to serve static files from a folder by
-running:
-
-```
-http-server -a localhost -p 8000
-```
-
-Alternatively, you can choose to configure your own webserver, such as apache or nginx. Just
-configure your server to serve the files under the `build/` directory.
+Start the HTTP server running  ``` npm start ```

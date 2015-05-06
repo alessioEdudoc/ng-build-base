@@ -16,14 +16,14 @@ In order to run the e2e tests, you have to:
 The e2e tests folder has this structure:
 <pre>
 e2e-tests
++- conf
+| +- heroku.conf.js **(protractor configuration file for Heroku)**
+| +- local.conf.js **(protractor configuration file for localhost)**
++- abstract
+| +- Page.js
+| +- Input.js
+| +- **(other page and component abstraction files...)**
 +- pages
-| +- conf
-| | +- heroku.conf.js **(protractor configuration file for Heroku)**
-| | +- local.conf.js **(protractor configuration file for localhost)**
-| +- common
-| | +- Page.js
-| | +- Input.js
-| | +- **(other page and component abstraction files...)**
 | +- page-name **(replace with descriptive name)**
 | | +- page-file-1.js
 | | +- **(...other page files, partials etc...)**
