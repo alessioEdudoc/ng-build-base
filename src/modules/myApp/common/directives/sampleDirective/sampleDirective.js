@@ -1,9 +1,9 @@
 
-angular.module('sampleDirective', []).directive('myCustomer', function($rootScope) {
+angular.module('myApp').directive('myCustomer', function($rootScope) {
 	"use strict";
 
         return {
-            restrict: 'AE',
+            'restrict': 'AE',
             templateUrl: 'my-customer.html'
         };
     });

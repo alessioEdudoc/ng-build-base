@@ -488,3 +488,126 @@ gulp.task('ngdoc', function() {
 });
 
 
+
+
+
+
+var parser = require('esprima');
+
+gulp.task('test', function() {
+
+
+    var files = glob.sync('src/modules/**/*Ctrl.js');
+
+    _.forEach(files, function(filePath){
+        console.log(filePath);
+        var file = fs.readFileSync(filePath);
+
+        var tree = parser.parse(file);
+
+        var deps = getFuncArgDeps(tree, 'controller');
+        console.log('DEPS : ' + deps);
+        console.log('MODU : ' + getModuleName(tree));
+        console.log('RECI : ' + getRecipeName(tree, 'controller'));
+    });
+
+
+    var files = glob.sync('src/modules/**/directives/**/*.js');
+
+    _.forEach(files, function(filePath){
+        console.log(filePath);
+        var file = fs.readFileSync(filePath);
+
+        var tree = parser.parse(file);
+
+        var deps = getFuncArgDeps(tree, 'directive');
+        console.log('DEPS : ' + deps);
+        console.log('MODU : ' + getModuleName(tree));
+        console.log('RECI : ' + getRecipeName(tree, 'directive'));
+        console.log('REST : ' + getRestrictAttr(tree, 'directive'));
+
+    });
+
+});
+
+
+function getFuncArgDeps(tree, recipe) {
+    
+    var ar = [];
+    _.forEach(tree, function(child){
+        //console.log(child);
+         if (child && child.type==='CallExpression' && child.callee.property.name===recipe) {
+             ar = _.pluck(child.arguments[1].params, 'name');
+             return false;
+         } else {
+            if(_.isObject(child) || _.isArray(child))
+               ar = getFuncArgDeps(child, recipe);
+         }
+    });
+    return ar;
+}
+
+function getModuleName(tree) {
+    
+    var moduleName = '';
+    _.forEach(tree, function(child){
+        //console.log(child);
+         if (child && child.type==='CallExpression' && child.callee.property.name==='module') {
+            
+             moduleName = child.arguments[0].raw;
+             console.log(moduleName);/////////////////////////////////////////////
+             return false;
+         } else {
+            if(_.isObject(child) || _.isArray(child))
+               moduleName = getModuleName(child);
+         }
+    });
+    return moduleName;
+}
+
+
+function getRecipeName(tree, recipe) {
+    
+    var moduleName = '';
+    _.forEach(tree, function(child){
+        //console.log(child);
+         if (child && child.type==='CallExpression' && child.callee.property.name===recipe) {
+            
+             moduleName = child.arguments[0].raw;
+             return false;
+         } else {
+            if(_.isObject(child) || _.isArray(child))
+               moduleName = getRecipeName(child, recipe);
+         }
+    });
+    return moduleName;
+}
+
+function getAttr(tree, attr) {
+    
+    var moduleName = '', found = false;
+    _.forEach(tree, function(child){
+        //console.log(child);
+         if (child && child.type==='ObjectExpression') {
+            
+            _.forEach(child.properties, function(prop){
+                if ((prop.key.type==='Identifier' && prop.key.name===attr) || (prop.key.type==='Literal' && prop.key.value===attr)) {
+
+                    moduleName = prop.value.value;
+                    found = true;
+                    return !found;
+                }
+            });
+            return !found;
+         } else {
+            if(_.isObject(child) || _.isArray(child))
+               moduleName = getRestrictAttr(child);
+         }
+    });
+    return moduleName;
+}
+
+
+
+
+
