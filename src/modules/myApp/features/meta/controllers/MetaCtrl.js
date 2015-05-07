@@ -1,5 +1,5 @@
 /**
- * @ngdoc
+ * @ngdoc controller
  * @name myApp.controller:MetaCtrl
  * @requires M
  *

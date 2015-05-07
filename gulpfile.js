@@ -26,6 +26,8 @@ var gulp = require('gulp-param')(require('gulp'), process.argv),
     ;
 
 
+var vendor = require('./src/vendor.json');
+
 
 var injectIntoIndex = function(srcArray, starttag, hashes) {
     return inject(gulp.src(srcArray, {read : false}), {
@@ -173,21 +175,11 @@ gulp.task('index', ['vendor', 'assets', 'less', 'templates', 'meta', 'template-l
         './build/modules/**/*.js'
     ];
 
-    var vendorHead = [
-        './build/vendor/html5-boilerplate/css/normalize.css',
-        './build/vendor/html5-boilerplate/css/main.css',
-        './build/vendor/html5-boilerplate/js/vendor/modernizr-2.6.2.min.js'
-    ];
-
-    var vendorBody = [
-        './build/vendor/angular/angular.js',
-        './build/vendor/angular-route/angular-route.js'
-    ];
 
     return gulp.src('src/index.html')
         .pipe(injectIntoIndex(src, '<!-- inject:{{ext}} -->'))
-        .pipe(injectIntoIndex(vendorHead, '<!-- vendor:head:{{ext}} -->'))
-        .pipe(injectIntoIndex(vendorBody, '<!-- vendor:body:{{ext}} -->'))
+        .pipe(injectIntoIndex(vendor.head.dev, '<!-- vendor:head:{{ext}} -->'))
+        .pipe(injectIntoIndex(vendor.body.dev, '<!-- vendor:body:{{ext}} -->'))
         .pipe(gulp.dest('build'));
 
 
@@ -223,14 +215,25 @@ gulp.task('dev', ['build', 'meta-align', 'ngdoc', 'karma']);
 
 gulp.task('karma', ['build'],function(){
 
-    var testFiles = [
-        'build/vendor/angular/angular.js',
-        'build/vendor/angular-route/angular-route.js',
-        'build/vendor/angular-mocks/angular-mocks.js',
+    var vendorFiles = vendor.head.dev.concat(vendor.body.dev);
+
+    // filter out non testable files
+    vendorFiles = _.filter(vendorFiles, function(file){
+        return !file.match(/\.css$|modernizr/);
+    });
+
+    vendorFiles = _.map(vendorFiles, function(file){
+        return file.replace('./build/', 'build/');
+    });
+
+    var testFiles = vendorFiles.concat([
+
+        'build/vendor/angular-mocks/angular-mocks.js', // mocks
+
         'build/modules/*.js',
         'build/modules/**/*.js',
         'src/modules/**/*.test.js'     // then, include the test specs
-    ];
+    ]);
 
     // Be sure to return the stream
     return gulp.src(testFiles)
@@ -400,16 +403,6 @@ gulp.task('index-prod', ['js-prod', 'css-prod', 'dev'],function(){
         './build/js/*.min.js'
     ];
 
-    var vendorHead = [
-        './build/vendor/html5-boilerplate/css/normalize.css',
-        './build/vendor/html5-boilerplate/css/main.css',
-        './build/vendor/html5-boilerplate/js/vendor/modernizr-2.6.2.min.js'
-    ];
-
-    var vendorBody = [
-        './build/vendor/angular/angular.min.js',
-        './build/vendor/angular-route/angular-route.min.js'
-    ];
 
     var str = fs.readFileSync('./busters.json', "utf8");
     var hashes = JSON.parse(str);
@@ -417,8 +410,8 @@ gulp.task('index-prod', ['js-prod', 'css-prod', 'dev'],function(){
 
     return gulp.src('src/index.html')
         .pipe(injectIntoIndex(src, '<!-- inject:{{ext}} -->', hashes))
-        .pipe(injectIntoIndex(vendorHead, '<!-- vendor:head:{{ext}} -->', hashes))
-        .pipe(injectIntoIndex(vendorBody, '<!-- vendor:body:{{ext}} -->', hashes))
+        .pipe(injectIntoIndex(vendor.head.prod, '<!-- vendor:head:{{ext}} -->', hashes))
+        .pipe(injectIntoIndex(vendor.body.prod, '<!-- vendor:body:{{ext}} -->', hashes))
         .pipe(minifyHtml(minifyHtmlOptions))
         .pipe(gulp.dest('build'));
 
@@ -486,4 +479,269 @@ gulp.task('ngdoc', function() {
         }))
         .pipe(gulp.dest('docs'));
 });
+
+
+
+
+
+
+
+
+
+
+var parser = require('esprima');
+
+
+var recipeHasName = function (recipe) {
+    return _.contains(['directive','service','factory','constant','controller'], recipe);
+};
+
+gulp.task('test', function() {
+
+
+    var entries = [];
+
+
+    var files = glob.sync('src/modules/**/*.js');
+
+
+    var cnt = {
+        config : 0,
+        run : 0
+    };
+
+
+    _.forEach(files, function(filePath){
+
+        if (filePath.match(/\.test\.js$/))
+            return;
+
+        console.log(filePath);
+        var file = fs.readFileSync(filePath);
+
+        var tree = parser.parse(file, {comment:true, attachComments:true});
+
+
+        var subTrees = findSubTrees(tree);
+        return;
+
+
+        if (isModuleDefinition(tree))
+            return; ////////////////////////////////// Overview and special deps
+
+
+        var recipeType = getRecipeType(tree),
+            entry = {
+                type : recipeType,
+                deps : getFuncArgDeps(tree, recipeType),
+                module : getModuleName(tree),
+                name :  getRecipeName(tree, recipeType),
+
+                restrict : getAttr(tree, 'restrict'),
+                priority : getAttr(tree, 'priority'),
+                scope : isAttrDefined(tree, 'scope')
+            };
+
+        entry.fullName = entry.module + '.' + entry.type + ':' + (entry.name ? entry.name : entry.type+'_'+(cnt[entry.type]++));
+
+        entries.push(entry);
+        
+    });
+
+
+  
+
+    _.forEach(entries, function(entry){
+       
+
+        var str = '@ngdoc ' + (entry.type.match(/run|config/) ? 'object' : entry.type) +
+            '\n * @name ' + entry.fullName;
+
+        if (entry.scope)
+            str += '\n * @scope';
+
+        if (entry.restrict)
+            str += '\n * @restrict ' + entry.restrict;
+
+        if (entry.priority)
+            str += '\n * @priority ' + entry.priority;
+
+        _.forEach(entry.deps, function(dep){
+            str += '\n * @requires ' + dep;
+        });
+            
+        str += '\n * @description';
+
+        console.log(str);
+
+
+    });
+
+});
+
+
+function getFuncArgDeps(tree, recipe) {
+    
+    var ar;
+    var hasName = recipeHasName(recipe);
+    var parmIndex = hasName ? 1 : 0;
+    _.forEach(tree, function(child){
+        
+         if (!child || ar)
+            return;
+
+         if (child.type==='CallExpression' && child.callee.property.name===recipe) {
+            if (child.arguments[parmIndex].type==='FunctionExpression') { // if function form
+                ar = _.pluck(child.arguments[parmIndex].params, 'name');
+                return false;
+            }
+            else if (child.arguments[parmIndex].type==='ArrayExpression') { // if annotated form
+                ar = _.pluck(_.where(child.arguments[parmIndex].elements, {type:'Literal'}), 'value');
+                return false;
+            }
+         } else {
+            if(_.isObject(child) || _.isArray(child))
+               ar = getFuncArgDeps(child, recipe);
+         }
+    });
+    return ar;
+}
+
+function getModuleName(tree) {
+    var res = '';
+    _.forEach(tree, function(child){
+        if (res) 
+            return false;
+         if (child && child.type==='CallExpression' && child.callee.property.name==='module') {
+             res = child.arguments[0].value;
+             return false;
+         } else {
+            if(_.isObject(child) || _.isArray(child))
+                res = getModuleName(child); 
+         }
+    });
+    return res;
+}
+
+
+
+
+function getRecipeName(tree, recipe) {
+    
+    var res = '';
+    _.forEach(tree, function(child){
+        if (res) 
+            return false;
+
+         if (child && child.type==='CallExpression' && child.callee.property.name===recipe) {
+             res = child.arguments[0].value;
+             return false;
+         } else {
+            if(_.isObject(child) || _.isArray(child))
+               res = getRecipeName(child, recipe);
+         }
+    });
+    return res;
+}
+
+
+function getRecipeType(tree) {
+    
+    var res = '';
+    _.forEach(tree, function(child){
+        if (res) 
+            return false;
+
+         if (child && child.type==='CallExpression' && child.callee.property.name==='module') {
+             res = tree.property.name;
+             return false;
+         } else {
+            if(_.isObject(child) || _.isArray(child))
+               res = getRecipeType(child);
+         }
+    });
+    return res;
+}
+
+
+function getAttr(tree, attr) {
+    var res = '';
+    _.forEach(tree, function(child){
+         if (child && child.type==='ObjectExpression') {
+            if (res) 
+                return false;
+            _.forEach(child.properties, function(prop){
+                if ((prop.key.type==='Identifier' && prop.key.name===attr) || (prop.key.type==='Literal' && prop.key.value===attr)) {
+                    res = prop.value.value;
+                    return;
+                }
+            });
+         } else {
+            if(_.isObject(child) || _.isArray(child))
+               res = getAttr(child, attr);
+         }
+    });
+    return res;
+}
+
+function isAttrDefined(tree, attr) {
+    var res = false;
+    _.forEach(tree, function(child){
+         if (child && child.type==='ObjectExpression') {
+            if (res) 
+                return res;
+            _.forEach(child.properties, function(prop){
+                if ((prop.key.type==='Identifier' && prop.key.name===attr) || (prop.key.type==='Literal' && prop.key.value===attr)) {
+                    res = true;
+                    return;
+                }
+            });
+         } else {
+            if(_.isObject(child) || _.isArray(child))
+               res = isAttrDefined(child, attr);
+         }
+    });
+    return res;
+}
+
+function isModuleDefinition(tree) {
+    var res = false;
+    _.forEach(tree, function(child){
+        if (res) 
+            return res;
+
+         if (child && child.type==='CallExpression' && child.callee.property.name==='module') {
+            console.log();
+             if (child.arguments.length===2 && child.arguments[1].type==='ArrayExpression')
+                res = true;
+             return;
+         } else {
+            if(_.isObject(child) || _.isArray(child))
+               res = isModuleDefinition(child);
+         }
+    });
+    return res;
+}
+
+
+
+function findSubTrees(tree) {
+
+    if (!_.isArray(tree) && !_.isObject(tree))
+        return;
+   
+    if (tree && (tree.leadingComments || tree.comments || tree.trailingComments)) {
+
+        for (var i in tree.leadingComments)
+         console.log("######## "+i.value);
+
+    }
+        
+
+    _.forEach(tree, function(child){
+        
+        findSubTrees(child);
+    });
+}
+
 

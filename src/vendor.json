@@ -1,0 +1,30 @@
+{
+	"head" : {
+
+		"dev" : [
+	        "./build/vendor/html5-boilerplate/css/normalize.css",
+	        "./build/vendor/html5-boilerplate/css/main.css",
+	        "./build/vendor/html5-boilerplate/js/vendor/modernizr-2.6.2.min.js"
+	    ],
+
+	    "prod" : [
+	    	"./build/vendor/html5-boilerplate/css/normalize.css",
+	        "./build/vendor/html5-boilerplate/css/main.css",
+	        "./build/vendor/html5-boilerplate/js/vendor/modernizr-2.6.2.min.js"
+	    ]
+
+	},
+	"body" : {
+
+		"dev" : [
+	        "./build/vendor/angular/angular.js",
+        	"./build/vendor/angular-route/angular-route.js"
+	    ],
+
+	    "prod" : [
+	    	"./build/vendor/angular/angular.min.js",
+        	"./build/vendor/angular-route/angular-route.min.js"
+        ]
+
+	}
+}
