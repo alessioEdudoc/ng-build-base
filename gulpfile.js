@@ -519,11 +519,14 @@ gulp.task('test', function() {
         console.log(filePath);
         var file = fs.readFileSync(filePath);
 
-        var tree = parser.parse(file, {comment:true, attachComments:true});
+        var tree = parser.parse(file, {comment:true, attachComment:true});
 
 
         var subTrees = findSubTrees(tree);
-        return;
+        for (var i=0; i<subTrees.length; ++i)
+            console.log(subTrees[i].cmt.range, subTrees[i].cmt.value);
+
+        return;////////////////////////////////////////////######################################################
 
 
         if (isModuleDefinition(tree))
@@ -725,23 +728,53 @@ function isModuleDefinition(tree) {
 
 
 
+
+
+
+
 function findSubTrees(tree) {
 
-    if (!_.isArray(tree) && !_.isObject(tree))
-        return;
-   
-    if (tree && (tree.leadingComments || tree.comments || tree.trailingComments)) {
+    var res = [];
 
-        for (var i in tree.leadingComments)
-         console.log("######## "+i.value);
+    function visit(tree) {
 
+        if (!_.isArray(tree) && !_.isObject(tree))
+            return;
+       
+        if (tree && tree.leadingComments) {
+
+            var ngdocComment;
+             _.forEach(tree.leadingComments, function(cmt){
+                if (ngdocComment)
+                    return;
+
+                if (cmt.value.match(/@ngdoc/))
+                    ngdocComment = cmt;
+           
+
+                
+             });
+
+             
+
+             if (ngdocComment) {
+                //console.log(ngdocComment.value);
+                tree.cmt = ngdocComment;
+                res.push(tree);
+             }
+                
+        }
+            
+
+        _.forEach(tree, function(child){
+            
+            visit(child);
+        });
     }
-        
 
-    _.forEach(tree, function(child){
-        
-        findSubTrees(child);
-    });
+    visit(tree);
+
+    return res;
 }
 
 

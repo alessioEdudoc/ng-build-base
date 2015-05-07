@@ -25,4 +25,22 @@ angular.module('myApp')
                 two : 'sdsds'
             }
         };
+    }])
+
+/**
+ * @ngdoc PIPPO
+ */
+.directive('myCustomer2', [ '$rootScope2', function($rs) {
+    "use strict";
+
+        return {
+            'restrict': 'AE',
+            templateUrl: 'my-customer.html',
+            priority : 100,
+
+            scdpe : {
+                one : 'sdsd',
+                two : 'sdsds'
+            }
+        };
     }]);
