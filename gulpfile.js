@@ -523,31 +523,47 @@ gulp.task('test', function() {
 
 
         var subTrees = findSubTrees(tree);
-        for (var i=0; i<subTrees.length; ++i)
-            console.log(subTrees[i].cmt.range, subTrees[i].cmt.value);
+        // for (var i=0; i<subTrees.length; ++i)
+        //     console.log(subTrees[i].cmt.range, subTrees[i].cmt.value);
 
-        return;////////////////////////////////////////////######################################################
+        // return;////////////////////////////////////////////######################################################
+
+        var moduleName = getModuleName(tree);
+
+        for (var sti=0; sti<subTrees.length; ++sti) {
+
+            var node = subTrees[sti];
+
+            if (isModuleDefinition(node))
+                continue; ////////////////////////////////// Overview and special deps
 
 
-        if (isModuleDefinition(tree))
-            return; ////////////////////////////////// Overview and special deps
+            var recipeType = getRecipeType(node),
+                entry = {
+                    type : recipeType,
+                    deps : getFuncArgDeps(node, recipeType),
+                    module : moduleName,
+                    name :  getRecipeName(node, recipeType),
+
+                    restrict : getAttr(node, 'restrict'),
+                    priority : getAttr(node, 'priority'),
+                    scope : isAttrDefined(node, 'scope'),
+
+                    treeNode : node
+                };
+
+            entry.fullName = entry.module + '.' + entry.type + ':' + (entry.name ? entry.name : entry.type+'_'+(cnt[entry.type]++));
+
+            entries.push(entry);
 
 
-        var recipeType = getRecipeType(tree),
-            entry = {
-                type : recipeType,
-                deps : getFuncArgDeps(tree, recipeType),
-                module : getModuleName(tree),
-                name :  getRecipeName(tree, recipeType),
+        }
 
-                restrict : getAttr(tree, 'restrict'),
-                priority : getAttr(tree, 'priority'),
-                scope : isAttrDefined(tree, 'scope')
-            };
 
-        entry.fullName = entry.module + '.' + entry.type + ':' + (entry.name ? entry.name : entry.type+'_'+(cnt[entry.type]++));
+        
 
-        entries.push(entry);
+
+
         
     });
 
@@ -583,29 +599,54 @@ gulp.task('test', function() {
 });
 
 
+// function getFuncArgDeps(tree, recipe) {
+    
+//     var ar;
+//     var hasName = recipeHasName(recipe);
+//     var parmIndex = hasName ? 1 : 0;
+//     _.forEach(tree, function(child){
+        
+//          if (!child || ar)
+//             return;
+
+//          if (child.type==='CallExpression' && child.callee.property.name===recipe) {
+//             if (child.arguments[parmIndex].type==='FunctionExpression') { // if function form
+//                 ar = _.pluck(child.arguments[parmIndex].params, 'name');
+//                 return false;
+//             }
+//             else if (child.arguments[parmIndex].type==='ArrayExpression') { // if annotated form
+//                 ar = _.pluck(_.where(child.arguments[parmIndex].elements, {type:'Literal'}), 'value');
+//                 return false;
+//             }
+//          } else {
+//             if(_.isObject(child) || _.isArray(child))
+//                ar = getFuncArgDeps(child, recipe);
+//          }
+//     });
+//     return ar;
+// }
 function getFuncArgDeps(tree, recipe) {
     
-    var ar;
+    
     var hasName = recipeHasName(recipe);
     var parmIndex = hasName ? 1 : 0;
+
+    if (tree.type==='CallExpression' && tree.callee.property.name===recipe) {
+        if (tree.arguments[parmIndex].type==='FunctionExpression') { // if function form
+            return _.pluck(tree.arguments[parmIndex].params, 'name');
+        }
+        else if (tree.arguments[parmIndex].type==='ArrayExpression') { // if annotated form
+            return _.pluck(_.where(tree.arguments[parmIndex].elements, {type:'Literal'}), 'value');
+        }
+     }
+
+     var ar;
     _.forEach(tree, function(child){
-        
          if (!child || ar)
             return;
 
-         if (child.type==='CallExpression' && child.callee.property.name===recipe) {
-            if (child.arguments[parmIndex].type==='FunctionExpression') { // if function form
-                ar = _.pluck(child.arguments[parmIndex].params, 'name');
-                return false;
-            }
-            else if (child.arguments[parmIndex].type==='ArrayExpression') { // if annotated form
-                ar = _.pluck(_.where(child.arguments[parmIndex].elements, {type:'Literal'}), 'value');
-                return false;
-            }
-         } else {
-            if(_.isObject(child) || _.isArray(child))
-               ar = getFuncArgDeps(child, recipe);
-         }
+        if(_.isObject(child) || _.isArray(child))
+            ar = getFuncArgDeps(child, recipe);
     });
     return ar;
 }
@@ -631,17 +672,16 @@ function getModuleName(tree) {
 
 function getRecipeName(tree, recipe) {
     
+    if (tree && tree.type==='CallExpression' && tree.callee.property.name===recipe)
+        return tree.arguments[0].value;
+
     var res = '';
     _.forEach(tree, function(child){
         if (res) 
-            return false;
-
-         if (child && child.type==='CallExpression' && child.callee.property.name===recipe) {
-             res = child.arguments[0].value;
-             return false;
-         } else {
-            if(_.isObject(child) || _.isArray(child))
-               res = getRecipeName(child, recipe);
+            return;
+         
+        if(_.isObject(child) || _.isArray(child)) {
+            res = getRecipeName(child, recipe);
          }
     });
     return res;
@@ -736,10 +776,18 @@ function findSubTrees(tree) {
 
     var res = [];
 
+    var stackExpressionStatement = [];
+
     function visit(tree) {
 
         if (!_.isArray(tree) && !_.isObject(tree))
             return;
+
+        if (tree.type==='ExpressionStatement') {
+            stackExpressionStatement.push(tree);
+            console.log('PUSH ', tree);
+        }
+
        
         if (tree && tree.leadingComments) {
 
@@ -750,17 +798,19 @@ function findSubTrees(tree) {
 
                 if (cmt.value.match(/@ngdoc/))
                     ngdocComment = cmt;
-           
-
                 
              });
 
              
 
              if (ngdocComment) {
+
+                var node = stackExpressionStatement[0];
+
                 //console.log(ngdocComment.value);
-                tree.cmt = ngdocComment;
-                res.push(tree);
+                node.cmt = ngdocComment;
+                res.push(node);
+                console.log('BOOOOOOOOOOOOOOM ', node);
              }
                 
         }
@@ -770,7 +820,13 @@ function findSubTrees(tree) {
             
             visit(child);
         });
+        if (tree.type==='ExpressionStatement') {
+            stackExpressionStatement.pop();
+            console.log('POP ', tree);
+        }
     }
+
+
 
     visit(tree);
 
